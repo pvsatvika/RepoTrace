@@ -1,13 +1,52 @@
 import React from 'react';
 
+function getHumanReadableTitle(item) {
+  if (!item) return 'Repository Event';
+  let title = item.title || item.reason || 'Repository Change';
+  title = title
+    .replace(/^(Commit\s+[a-f0-9]+:\s*)/i, '')
+    .replace(/^(PR\s*#\d+:\s*)/i, '')
+    .replace(/^(Pull Request\s*#\d+:\s*)/i, '')
+    .replace(/^(Issue\s*#\d+:\s*)/i, '')
+    .replace(/^(Architectural Decision:\s*)/i, '')
+    .replace(/^(Incident \/ Problem:\s*)/i, '')
+    .replace(/^(Decision \([^)]+\):\s*)/i, '')
+    .replace(/^(Incident \([^)]+\):\s*)/i, '')
+    .trim();
+
+  if (!title || /^[a-f0-9]{7,40}$/i.test(title)) {
+    title = item.reason ? item.reason.split('\n')[0].substring(0, 120) : (item.title || 'Repository Change');
+  }
+  return title;
+}
+
+function getTechnicalId(item) {
+  if (!item || !item.id) return null;
+  if (item.type === 'commit' || /^[a-f0-9]{7,40}$/i.test(item.id)) {
+    return item.id.length > 7 ? item.id.substring(0, 7) : item.id;
+  }
+  if (item.type === 'pull_request' || item.type === 'issue') {
+    return item.id.includes('#') ? `#${item.id.split('#')[1]}` : item.id;
+  }
+  return item.id;
+}
+
+function formatChangeTypeLabel(type) {
+  switch (type) {
+    case 'commit': return 'Commit';
+    case 'pull_request': return 'Pull Request';
+    case 'issue': return 'Issue';
+    case 'discussion': return 'Discussion';
+    case 'decision': return 'Decision';
+    case 'incident': return 'Incident';
+    default: return type || 'Event';
+  }
+}
+
 export default function HistoryTimeline({ evidence = [] }) {
   if (!evidence || evidence.length === 0) return null;
 
-  const timelineItems = [...evidence]
-    .filter(item => item.title && item.type)
-    .slice(0, 6);
-
-  if (timelineItems.length === 0) return null;
+  const timelineItems = [...evidence].slice(0, 10);
 
   return (
     <div className="py-6 space-y-6">
@@ -15,48 +54,65 @@ export default function HistoryTimeline({ evidence = [] }) {
       {/* HEADER */}
       <div>
         <h3 className="text-xl font-extrabold text-[#f8fafc] tracking-tight font-sans">
-          Chronological Decision Rail
+          Chronological Evolution Timeline
         </h3>
         <p className="text-xs text-[#9ca3af] font-sans mt-0.5">
-          Sequence of historical events establishing current codebase state.
+          Chronological sequence of repository changes, refactors, and historical context.
         </p>
       </div>
 
       {/* CHRONOLOGICAL RAIL */}
-      <div className="relative pl-4 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#1f2430]">
+      <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-[#1f2430]">
         {timelineItems.map((item, idx) => {
           const hasUrl = item.url && item.url !== '#' && item.url.startsWith('http');
+          const humanTitle = getHumanReadableTitle(item);
+          const techId = getTechnicalId(item);
 
           return (
-            <div key={idx} className="relative group pl-3 space-y-1">
+            <div key={idx} className="relative group pl-3 space-y-2">
               {/* NODE DOT */}
-              <div className="absolute -left-[17px] top-2.5 w-2.5 h-2.5 rounded-full bg-[#06b6d4]" />
+              <div className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-[#06b6d4] ring-4 ring-[#08090d]" />
 
-              <div className="flex items-center justify-between font-mono text-xs text-[#6b7280]">
-                <span className="text-[#06b6d4] font-bold uppercase">{item.type}</span>
+              {/* CHANGE TYPE & DATE */}
+              <div className="flex items-center justify-between text-xs font-mono text-[#6b7280]">
+                <span className="text-[#06b6d4] font-bold uppercase tracking-wider">
+                  {formatChangeTypeLabel(item.type)}
+                </span>
                 <span>{item.date || 'Historical Event'}</span>
               </div>
 
-              <h4 className="font-bold text-[#f8fafc] text-base font-sans">
-                {item.title}
+              {/* HUMAN READABLE TITLE */}
+              <h4 className="font-bold text-[#f8fafc] text-base font-sans leading-snug">
+                {humanTitle}
               </h4>
 
+              {/* REASON / WHY IT MATTERS EXCERPT */}
               {item.reason && (
-                <p className="text-sm text-[#9ca3af] font-sans italic leading-relaxed">
+                <p className="text-sm text-[#9ca3af] font-sans italic leading-relaxed pl-3 border-l-2 border-[#1f2430]">
                   "{item.reason}"
                 </p>
               )}
 
-              <div className="flex items-center justify-between text-xs font-mono text-[#6b7280] pt-1">
-                <span>@{item.author || 'contributor'}</span>
+              {/* METADATA, TECHNICAL DETAILS & SOURCE LINK */}
+              <div className="flex flex-wrap items-center justify-between text-xs font-sans text-[#6b7280] pt-1 gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-[#9ca3af]">@{item.author || 'contributor'}</span>
+                  {techId && (
+                    <span className="font-mono text-[11px] text-[#6b7280] bg-[#0d0e14] px-2 py-0.5 rounded border border-[#1f2430]">
+                      commit: {techId}
+                    </span>
+                  )}
+                </div>
+
                 {hasUrl && (
                   <a
                     href={item.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[#06b6d4] hover:underline font-bold"
+                    className="font-mono text-xs text-[#06b6d4] hover:underline font-bold flex items-center gap-1"
                   >
-                    VIEW SOURCE →
+                    <span>VIEW SOURCE</span>
+                    <span>→</span>
                   </a>
                 )}
               </div>

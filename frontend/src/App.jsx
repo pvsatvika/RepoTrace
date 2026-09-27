@@ -21,20 +21,25 @@ export default function App() {
   const [backendUnavailable, setBackendUnavailable] = useState(false);
 
   // Ingestion State
-  const [repository, setRepository] = useState('expressjs/express');
+  const [repository, setRepository] = useState('');
   const [ingestLoading, setIngestLoading] = useState(false);
   const [ingestSuccess, setIngestSuccess] = useState(null);
   const [ingestError, setIngestError] = useState(null);
   const [activeRepoStats, setActiveRepoStats] = useState(null);
 
   // Query State
-  const [question, setQuestion] = useState('Why was error handling modified in router.js?');
+  const [question, setQuestion] = useState('');
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
   const [queryError, setQueryError] = useState(null);
 
   // Interactive Evidence Filter State
   const [evidenceFilter, setEvidenceFilter] = useState('all');
+
+  // Derived Repo & Stats State
+  const hasAnalyzedRepo = Boolean(ingestSuccess || activeRepoStats);
+  const currentRepoName = ingestSuccess?.repository || repository || 'Active Repository';
+  const currentStats = activeRepoStats || ingestSuccess?.stats;
 
   // Check Health on Mount via Vite Proxy (/api/health)
   useEffect(() => {
@@ -111,9 +116,13 @@ export default function App() {
     e?.preventDefault();
     if (!repository.trim()) return;
 
+    // Immediately reset previous repository state and query results
     setIngestLoading(true);
     setIngestError(null);
     setIngestSuccess(null);
+    setActiveRepoStats(null);
+    setQueryResult(null);
+    setQueryError(null);
 
     try {
       const res = await axios.post('/api/ingest', { repository: repository.trim() });
@@ -312,7 +321,7 @@ export default function App() {
                 onSelectType={(type) => setEvidenceFilter(type)}
               />
 
-              {/* TWO-COLUMN RESULTS CANVAS: MAIN ANSWER (LEFT) & EVIDENCE (RIGHT) */}
+              {/* TWO-COLUMN RESULTS CANVAS: MAIN ANSWER (LEFT) & SUPPORTING EVIDENCE (RIGHT) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
                 
                 {/* MAIN WHY ANSWER CANVAS (7 COLS ON DESKTOP) */}
@@ -325,15 +334,13 @@ export default function App() {
                   />
                 </div>
 
-                {/* RETRIEVED EVIDENCE & TIMELINE (5 COLS ON DESKTOP) */}
+                {/* SUPPORTING EVIDENCE FOR THIS QUESTION (5 COLS ON DESKTOP) */}
                 <div className="lg:col-span-5 space-y-12">
                   <EvidencePanel
                     evidence={queryResult.evidence}
                     activeFilter={evidenceFilter}
                     setActiveFilter={(type) => setEvidenceFilter(type)}
                   />
-
-                  <HistoryTimeline evidence={queryResult.evidence} />
                 </div>
 
               </div>
@@ -346,7 +353,7 @@ export default function App() {
               </div>
               <div className="space-y-1">
                 <h3 className="text-xl font-extrabold text-[#f8fafc] font-sans">
-                  Ready to query {repository}?
+                  Ready to query {repository || 'a repository'}?
                 </h3>
                 <p className="text-sm text-[#9ca3af] font-sans max-w-lg mx-auto">
                   Type any natural language question to trace historical commit rationale and architectural decisions.
@@ -360,92 +367,155 @@ export default function App() {
         {/* 3. HISTORY SECTION */}
         <section id="history" className="scroll-mt-24 py-10 space-y-8 border-b border-[#1f2430]">
           
-          {/* SECTION HEADER */}
-          <div className="space-y-2">
-            <div className="text-xs font-mono font-bold text-[#06b6d4] uppercase tracking-wider">
-              02 · REPOSITORY HISTORY & EVIDENCE RAIL
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
-              Repository Evolution & Historical Evidence
-            </h2>
-            <p className="text-base text-[#9ca3af] font-sans">
-              Graph-indexed commits, pull request reviews, issue discussions, and change history for <span className="text-[#06b6d4] font-mono font-bold">{repository}</span>.
-            </p>
-          </div>
-
-          {/* REAL DATA HISTORY DISPLAY */}
-          {queryResult?.evidence && queryResult.evidence.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start pt-4">
-              <div className="lg:col-span-7">
-                <EvidencePanel
-                  evidence={queryResult.evidence}
-                  activeFilter={evidenceFilter}
-                  setActiveFilter={(type) => setEvidenceFilter(type)}
-                />
+          {ingestLoading ? (
+            /* STATE B: ANALYZING REPOSITORY */
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <div className="text-xs font-mono font-bold text-[#06b6d4] uppercase tracking-wider">
+                  02 · REPOSITORY HISTORY & TIMELINE
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
+                  Repository Evolution & History
+                </h2>
               </div>
-              <div className="lg:col-span-5">
-                <HistoryTimeline evidence={queryResult.evidence} />
+
+              <div className="p-12 rounded-2xl bg-[#0d0e14] border border-[#1f2430] text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#06b6d4]/10 text-[#06b6d4] font-mono text-xl font-bold animate-pulse">
+                  ⏳
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-extrabold text-[#f8fafc] font-sans animate-pulse">
+                    ANALYZING REPOSITORY...
+                  </h3>
+                  <p className="text-sm text-[#9ca3af] font-sans max-w-lg mx-auto">
+                    Ingesting commits, pull requests, and issue discussions into Neo4j graph nodes for <span className="font-mono text-[#06b6d4] font-bold">{repository}</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : !hasAnalyzedRepo ? (
+            /* STATE A: NO REPOSITORY ANALYZED YET */
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <div className="text-xs font-mono font-bold text-[#06b6d4] uppercase tracking-wider">
+                  02 · REPOSITORY HISTORY & TIMELINE
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
+                  Repository History
+                </h2>
+              </div>
+
+              <div className="p-12 rounded-2xl bg-[#0d0e14] border border-[#1f2430] text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#06b6d4]/10 text-[#06b6d4] font-mono text-2xl font-bold">
+                  02
+                </div>
+                <div className="space-y-2 max-w-lg mx-auto">
+                  <h3 className="text-2xl font-extrabold text-[#f8fafc] font-sans">
+                    Analyze a repository to explore its history.
+                  </h3>
+                  <p className="text-sm text-[#9ca3af] font-sans leading-relaxed">
+                    Once a repository is analyzed, its commits, pull requests, issues, discussions, and evolution will appear here.
+                  </p>
+                </div>
+                <div>
+                  <button
+                    onClick={() => navigateToSection('explore')}
+                    className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-mono text-xs font-bold px-6 py-3.5 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#8b5cf6]/20 hover:-translate-y-0.5"
+                  >
+                    ANALYZE REPOSITORY →
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-8 pt-4">
-              {/* REPOSITORY HISTORY STATS CARD */}
-              <div className="p-8 rounded-2xl bg-[#0d0e14] border border-[#1f2430] space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1f2430] pb-6">
-                  <div>
-                    <span className="text-xs font-mono text-[#06b6d4] font-bold uppercase">
-                      INDEXED EVIDENCE TYPES
-                    </span>
-                    <h3 className="text-2xl font-extrabold text-[#f8fafc] font-sans mt-1">
-                      Historical Context Nodes for {repository}
-                    </h3>
-                  </div>
-
-                  <button
-                    onClick={() => navigateToSection('ask-why')}
-                    className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-mono text-xs font-bold px-5 py-3 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-md shadow-[#8b5cf6]/20 hover:-translate-y-0.5"
-                  >
-                    QUERY REPOSITORY HISTORY →
-                  </button>
+            /* STATE C: REPOSITORY SUCCESSFULLY ANALYZED */
+            <div className="space-y-8">
+              {/* SECTION HEADER */}
+              <div className="space-y-2">
+                <div className="text-xs font-mono font-bold text-[#06b6d4] uppercase tracking-wider">
+                  02 · REPOSITORY EVOLUTION & TIMELINE
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
-                    <div className="text-xs font-mono text-[#6b7280] uppercase">Git Commits</div>
-                    <div className="text-2xl font-extrabold text-[#06b6d4] font-mono mt-1">
-                      {activeRepoStats?.nodes?.commit || ingestSuccess?.stats?.nodes?.commit || '45+'}
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Sha, author & timestamp</div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
-                    <div className="text-xs font-mono text-[#6b7280] uppercase">Pull Requests</div>
-                    <div className="text-2xl font-extrabold text-[#8b5cf6] font-mono mt-1">
-                      {activeRepoStats?.nodes?.pull_request || ingestSuccess?.stats?.nodes?.pull_request || '18+'}
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Reviewer discussions & PR logs</div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
-                    <div className="text-xs font-mono text-[#6b7280] uppercase">Issues & Incidents</div>
-                    <div className="text-2xl font-extrabold text-[#38bdf8] font-mono mt-1">
-                      {activeRepoStats?.nodes?.issue || ingestSuccess?.stats?.nodes?.issue || '24+'}
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Bug reports & workarounds</div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
-                    <div className="text-xs font-mono text-[#6b7280] uppercase">Decision Nodes</div>
-                    <div className="text-2xl font-extrabold text-[#a78bfa] font-mono mt-1">
-                      {activeRepoStats?.nodes?.decision || ingestSuccess?.stats?.nodes?.decision || '12+'}
-                    </div>
-                    <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Refactor rationale nodes</div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-[#9ca3af] font-sans leading-relaxed pt-2">
-                  Neo4j graph nodes map every file change back to its originating GitHub commit and pull request. When you ask a question in the <button onClick={() => navigateToSection('ask-why')} className="text-[#06b6d4] font-bold hover:underline cursor-pointer">Ask Why</button> interface, retrieved empirical evidence items populate this rail directly.
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
+                  Repository Evolution & History
+                </h2>
+                <p className="text-base text-[#9ca3af] font-sans">
+                  Chronological sequence of historical commits, pull request reviews, issue discussions, and change rationale for <span className="text-[#06b6d4] font-mono font-bold">{currentRepoName}</span>.
                 </p>
+              </div>
+
+              {/* REPOSITORY HISTORY WORKSPACE */}
+              <div className="space-y-8 pt-2">
+                {/* REPOSITORY HISTORY STATS CARD */}
+                <div className="p-8 rounded-2xl bg-[#0d0e14] border border-[#1f2430] space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1f2430] pb-6">
+                    <div>
+                      <span className="text-xs font-mono text-[#06b6d4] font-bold uppercase">
+                        GRAPH-INDEXED EVOLUTION NODES
+                      </span>
+                      <h3 className="text-2xl font-extrabold text-[#f8fafc] font-sans mt-1">
+                        Historical Context Nodes for {currentRepoName}
+                      </h3>
+                    </div>
+
+                    <button
+                      onClick={() => navigateToSection('ask-why')}
+                      className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-mono text-xs font-bold px-5 py-3 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-md shadow-[#8b5cf6]/20 hover:-translate-y-0.5"
+                    >
+                      QUERY REPOSITORY HISTORY →
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
+                      <div className="text-xs font-mono text-[#6b7280] uppercase">Git Commits</div>
+                      <div className="text-2xl font-extrabold text-[#06b6d4] font-mono mt-1">
+                        {currentStats?.nodes?.commit ?? currentStats?.commits ?? 0}
+                      </div>
+                      <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Sha, author & timestamp</div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
+                      <div className="text-xs font-mono text-[#6b7280] uppercase">Pull Requests</div>
+                      <div className="text-2xl font-extrabold text-[#8b5cf6] font-mono mt-1">
+                        {currentStats?.nodes?.pull_request ?? currentStats?.pullRequests ?? 0}
+                      </div>
+                      <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Reviewer discussions & PR logs</div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
+                      <div className="text-xs font-mono text-[#6b7280] uppercase">Issues & Incidents</div>
+                      <div className="text-2xl font-extrabold text-[#38bdf8] font-mono mt-1">
+                        {currentStats?.nodes?.issue ?? currentStats?.issues ?? 0}
+                      </div>
+                      <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Bug reports & workarounds</div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#12141d] border border-[#1f2430]">
+                      <div className="text-xs font-mono text-[#6b7280] uppercase">Decision Nodes</div>
+                      <div className="text-2xl font-extrabold text-[#a78bfa] font-mono mt-1">
+                        {currentStats?.nodes?.decision ?? 0}
+                      </div>
+                      <div className="text-[11px] text-[#9ca3af] font-sans mt-1">Refactor rationale nodes</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#9ca3af] font-sans leading-relaxed pt-2">
+                    Neo4j graph nodes map every file change back to its originating GitHub commit and pull request. When you ask a question in the <button onClick={() => navigateToSection('ask-why')} className="text-[#06b6d4] font-bold hover:underline cursor-pointer">Ask Why</button> interface, retrieved empirical evidence items populate this rail directly.
+                  </p>
+                </div>
+
+                {/* CHRONOLOGICAL REPOSITORY HISTORY TIMELINE */}
+                {queryResult?.evidence && queryResult.evidence.length > 0 ? (
+                  <div className="p-8 rounded-2xl bg-[#0d0e14] border border-[#1f2430]">
+                    <HistoryTimeline evidence={queryResult.evidence} />
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-2xl bg-[#0d0e14] border border-[#1f2430] text-center space-y-4">
+                    <div className="text-[#9ca3af] font-sans text-sm">
+                      Chronological evidence timeline for <span className="font-mono text-[#06b6d4]">{currentRepoName}</span> will be generated when a query is executed.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

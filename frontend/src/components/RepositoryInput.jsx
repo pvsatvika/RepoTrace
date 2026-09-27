@@ -61,7 +61,7 @@ export default function RepositoryInput({
             type="text"
             value={repository}
             onChange={(e) => setRepository(e.target.value)}
-            placeholder="owner/repository"
+            placeholder="owner name/repository name"
             disabled={ingestLoading || backendUnavailable}
             className="w-full bg-[#0d0e14] border border-[#1f2430] rounded-xl pl-36 pr-6 py-5 text-base font-mono text-[#f8fafc] placeholder-[#6b7280] focus:outline-none focus:border-[#8b5cf6] focus:ring-1 focus:ring-[#8b5cf6] transition-all duration-200 disabled:opacity-50"
           />

@@ -1,5 +1,48 @@
 import React, { useState } from 'react';
 
+function getHumanReadableTitle(item) {
+  if (!item) return 'Historical Evidence Record';
+  let title = item.title || item.reason || 'Repository Code Change';
+  title = title
+    .replace(/^(Commit\s+[a-f0-9]+:\s*)/i, '')
+    .replace(/^(PR\s*#\d+:\s*)/i, '')
+    .replace(/^(Pull Request\s*#\d+:\s*)/i, '')
+    .replace(/^(Issue\s*#\d+:\s*)/i, '')
+    .replace(/^(Architectural Decision:\s*)/i, '')
+    .replace(/^(Incident \/ Problem:\s*)/i, '')
+    .replace(/^(Decision \([^)]+\):\s*)/i, '')
+    .replace(/^(Incident \([^)]+\):\s*)/i, '')
+    .trim();
+
+  if (!title || /^[a-f0-9]{7,40}$/i.test(title)) {
+    title = item.reason ? item.reason.split('\n')[0].substring(0, 120) : (item.title || 'Repository Code Change');
+  }
+  return title;
+}
+
+function getTechnicalId(item) {
+  if (!item || !item.id) return null;
+  if (item.type === 'commit' || /^[a-f0-9]{7,40}$/i.test(item.id)) {
+    return item.id.length > 7 ? item.id.substring(0, 7) : item.id;
+  }
+  if (item.type === 'pull_request' || item.type === 'issue') {
+    return item.id.includes('#') ? `#${item.id.split('#')[1]}` : item.id;
+  }
+  return item.id;
+}
+
+function formatChangeTypeLabel(type) {
+  switch (type) {
+    case 'commit': return 'Commit';
+    case 'pull_request': return 'Pull Request';
+    case 'issue': return 'Issue';
+    case 'discussion': return 'Discussion';
+    case 'decision': return 'Decision';
+    case 'incident': return 'Incident';
+    default: return type || 'Evidence';
+  }
+}
+
 export default function EvidencePanel({ evidence = [], activeFilter = 'all', setActiveFilter }) {
   const [selectedEvidenceId, setSelectedEvidenceId] = useState(null);
 
@@ -24,18 +67,18 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
   return (
     <div className="py-6 space-y-6">
       
-      {/* HEADER & UNDERSTATED FILTER CONTROLS */}
+      {/* HEADER & FILTER CONTROLS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1f2430] pb-4">
         <div>
-          <h3 className="text-xl font-extrabold text-[#f8fafc] tracking-tight">
+          <h3 className="text-xl font-extrabold text-[#f8fafc] tracking-tight font-sans">
             Source Material Evidence
           </h3>
           <p className="text-xs text-[#9ca3af] font-sans mt-0.5">
-            Historical repository evidence retrieved directly from Neo4j graph traversal.
+            Empirical repository evidence retrieved for this question.
           </p>
         </div>
 
-        {/* UNDERSTATED CONTROLS */}
+        {/* CONTROLS */}
         <div className="flex items-center gap-2 overflow-x-auto font-mono text-xs">
           {filterTypes.map(ft => (
             ft.count > 0 || ft.key === 'all' ? (
@@ -65,6 +108,8 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
           {filteredEvidence.map((item, idx) => {
             const hasUrl = item.url && item.url !== '#' && item.url.startsWith('http');
             const isSelected = selectedEvidenceId === idx;
+            const humanTitle = getHumanReadableTitle(item);
+            const techId = getTechnicalId(item);
 
             return (
               <div
@@ -75,21 +120,23 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                     setActiveFilter(item.type);
                   }
                 }}
-                className={`py-5 space-y-2.5 transition-all duration-200 cursor-pointer px-4 rounded-xl ${
+                className={`py-5 space-y-3 transition-all duration-200 cursor-pointer px-4 rounded-xl ${
                   isSelected
                     ? 'bg-[#12141d] border border-[#8b5cf6] shadow-md'
                     : 'hover:bg-[#12141d]/70 hover:-translate-y-0.5'
                 }`}
               >
-                {/* LINE 1: TYPE, TITLE, SOURCE LINK */}
-                <div className="flex items-start justify-between gap-4 font-sans text-sm">
-                  <div className="flex items-center gap-2.5">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#06b6d4] bg-[#06b6d4]/10 px-2.5 py-0.5 border border-[#06b6d4]/30 rounded-md">
-                      {item.type}
-                    </span>
-                    <span className="font-bold text-[#f8fafc] text-base">
-                      {item.title}
-                    </span>
+                {/* 1. HUMAN-READABLE SUMMARY (PRIMARY TITLE) & SOURCE LINK */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-[#06b6d4]">
+                      <span className="bg-[#06b6d4]/10 px-2 py-0.5 border border-[#06b6d4]/30 rounded-md">
+                        {formatChangeTypeLabel(item.type)}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-[#f8fafc] text-base font-sans leading-snug">
+                      {humanTitle}
+                    </h4>
                   </div>
 
                   {hasUrl && (
@@ -98,7 +145,7 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="font-mono text-xs text-[#06b6d4] hover:underline whitespace-nowrap font-bold flex items-center gap-1"
+                      className="font-mono text-xs text-[#06b6d4] hover:underline whitespace-nowrap font-bold flex items-center gap-1 shrink-0 mt-0.5"
                     >
                       <span>VIEW SOURCE</span>
                       <span>→</span>
@@ -106,17 +153,30 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                   )}
                 </div>
 
-                {/* LINE 2: REASON EXCERPT */}
+                {/* 2. WHY IT MATTERS / EXCERPT */}
                 {item.reason && (
-                  <p className="text-sm text-[#e2e8f0] italic font-sans pl-3 border-l-2 border-[#8b5cf6] my-2 leading-relaxed">
+                  <p className="text-sm text-[#e2e8f0] font-sans pl-3 border-l-2 border-[#8b5cf6] my-2 leading-relaxed">
                     "{item.reason}"
                   </p>
                 )}
 
-                {/* LINE 3: METADATA PROVENANCE */}
-                <div className="text-xs font-mono text-[#6b7280] flex items-center justify-between pt-1">
-                  <span>@{item.author || 'contributor'}</span>
-                  <span>{item.date || 'Historical Event'}</span>
+                {/* 3, 4, 5, 7. METADATA (AUTHOR, DATE, SECONDARY TECHNICAL DETAILS) */}
+                <div className="text-xs text-[#6b7280] font-sans flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#1f2430]/60">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-[#9ca3af]">
+                      @{item.author || 'contributor'}
+                    </span>
+                    <span className="text-[#4b5563]">·</span>
+                    <span className="text-[#9ca3af]">
+                      {item.date || 'Historical Record'}
+                    </span>
+                  </div>
+
+                  {techId && (
+                    <span className="font-mono text-[11px] text-[#6b7280] bg-[#0d0e14] px-2 py-0.5 rounded border border-[#1f2430]">
+                      id: {techId}
+                    </span>
+                  )}
                 </div>
               </div>
             );
