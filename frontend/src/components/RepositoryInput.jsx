@@ -35,17 +35,14 @@ export default function RepositoryInput({
     return () => clearInterval(timer);
   }, [ingestLoading, ingestSuccess]);
 
-  const presetRepos = [
-    { label: 'expressjs/express' },
-    { label: 'facebook/react' },
-    { label: 'vercel/next.js' }
-  ];
-
   return (
     <div className="py-8 space-y-6 border-b border-[#1f2430]" id="repository-section">
       
       {/* HEADING & SUPPORTING TEXT */}
       <div className="space-y-2">
+        <div className="text-xs font-mono font-bold text-[#8b5cf6] uppercase tracking-wider">
+          GitHub Repository
+        </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
           Start with a repository.
         </h2>
@@ -78,27 +75,6 @@ export default function RepositoryInput({
           {ingestLoading ? 'INGESTING GRAPH...' : 'ANALYZE REPOSITORY'}
         </button>
       </form>
-
-      {/* PRESET REPOSITORIES AS SIMPLE SELECTABLE LINKS */}
-      <div className="flex flex-wrap items-center gap-4 text-sm font-sans pt-1">
-        <span className="text-[#6b7280]">Selectable repositories:</span>
-        {presetRepos.map((preset, idx) => (
-          <React.Fragment key={preset.label}>
-            <button
-              type="button"
-              onClick={() => setRepository(preset.label)}
-              className={`font-mono text-sm transition-all duration-150 cursor-pointer ${
-                repository === preset.label
-                  ? 'text-[#06b6d4] font-bold border-b-2 border-[#06b6d4] pb-0.5'
-                  : 'text-[#9ca3af] hover:text-[#f8fafc] border-b border-transparent hover:border-[#9ca3af] pb-0.5'
-              }`}
-            >
-              {preset.label}
-            </button>
-            {idx < presetRepos.length - 1 && <span className="text-[#1f2430]">·</span>}
-          </React.Fragment>
-        ))}
-      </div>
 
       {/* INGESTION STAGES PIPELINE */}
       {(ingestLoading || ingestSuccess) && (

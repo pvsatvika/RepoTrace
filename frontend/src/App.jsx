@@ -349,7 +349,7 @@ export default function App() {
                   Ready to query {repository}?
                 </h3>
                 <p className="text-sm text-[#9ca3af] font-sans max-w-lg mx-auto">
-                  Select a suggested research lead above or type any natural language question to trace historical commit rationale.
+                  Type any natural language question to trace historical commit rationale and architectural decisions.
                 </p>
               </div>
             </div>
