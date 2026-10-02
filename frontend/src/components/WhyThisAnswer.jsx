@@ -12,19 +12,19 @@ export default function WhyThisAnswer({ evidenceCount = 0, confidence = 'support
   ];
 
   return (
-    <div className="bg-[#12141d] border border-[#1f2430] rounded-2xl p-6 sm:p-8 space-y-4 font-mono text-xs shadow-xl shadow-black/40">
-      <div className="flex items-center justify-between text-[#9ca3af]">
-        <span className="font-bold uppercase tracking-wider text-[#8b5cf6]">PIPELINE PROVENANCE</span>
-        <span className={isSupported ? 'text-[#10b981] font-bold' : 'text-[#ef4444] font-bold'}>
+    <div className="bg-theme-card border border-theme rounded-2xl p-5 sm:p-6 space-y-3 font-mono text-xs shadow-xs">
+      <div className="flex items-center justify-between text-theme-muted">
+        <span className="font-bold uppercase tracking-wider text-[var(--accent-purple)]">PIPELINE PROVENANCE</span>
+        <span className={isSupported ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
           {isSupported ? 'VERIFIED GROUNDED ANSWER' : 'LIMITED GRAPH CONTEXT'}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs text-white">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs text-theme-primary">
         {pipelineStages.map(stg => (
-          <div key={stg.num} className="p-3 border border-[#1f2430] rounded-xl bg-[#0d0e14] space-y-1">
-            <span className="text-[#6b7280] font-bold block text-[10px]">{stg.num} {stg.title}</span>
-            <span className="font-semibold text-white">{stg.desc}</span>
+          <div key={stg.num} className="p-2.5 border border-theme rounded-xl bg-theme-input space-y-0.5">
+            <span className="text-theme-muted font-bold block text-[10px]">{stg.num} {stg.title}</span>
+            <span className="font-semibold text-theme-primary">{stg.desc}</span>
           </div>
         ))}
       </div>

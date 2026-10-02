@@ -9,46 +9,47 @@ export default function QuestionPanel({
   backendUnavailable
 }) {
   return (
-    <div className="py-8 space-y-6 border-b border-[#1f2430]" id="query-section">
+    <div className="py-6 space-y-6" id="query-section">
       
-      {/* SECTION HEADING & SUPPORTING TEXT */}
-      <div className="space-y-2">
-        <div className="text-xs font-mono font-bold text-[#06b6d4] uppercase tracking-wider">
-          GraphRAG Query Interface
+      {/* LABEL & HEADING */}
+      <div className="space-y-1.5">
+        <div className="text-xs font-mono font-bold text-[var(--accent-blue)] uppercase tracking-wider flex items-center gap-1.5">
+          <span className="w-2.5 h-0.5 bg-[var(--accent-blue)] rounded-full" /> ASK WHY
         </div>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-[#f8fafc] tracking-tight">
-          ASK WHY
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-theme-primary tracking-tight">
+          What do you want to know?
         </h2>
-        <p className="text-base text-[#9ca3af] font-sans">
-          What do you want to understand about this code?
+        <p className="text-sm sm:text-base text-theme-secondary font-sans">
+          Ask a question about the repository and get clear, contextual answers.
         </p>
       </div>
 
-      {/* LARGE QUESTION INPUT FORM */}
-      <form onSubmit={handleQuery} className="space-y-4 pt-2">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* QUESTION INPUT BAR */}
+      <form onSubmit={handleQuery} className="space-y-4">
+        <div className="relative flex flex-col sm:flex-row items-stretch gap-3 bg-theme-card p-2 rounded-2xl border border-theme shadow-xs">
           <input
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Type your question..."
+            placeholder="E.g. Why is this function written this way?"
             disabled={queryLoading || backendUnavailable}
-            className="flex-1 bg-[#0d0e14] border border-[#1f2430] rounded-xl px-6 py-5 text-base font-sans text-[#f8fafc] placeholder-[#6b7280] focus:outline-none focus:border-[#8b5cf6] focus:ring-1 focus:ring-[#8b5cf6] transition-all duration-200 disabled:opacity-50"
+            className="flex-1 bg-transparent px-4 py-3 text-sm sm:text-base font-sans text-theme-primary placeholder:text-theme-muted focus:outline-none transition-all duration-200 disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={queryLoading || !question.trim() || backendUnavailable}
-            className="bg-[#8b5cf6] hover:bg-[#7c3aed] disabled:opacity-50 text-[#f8fafc] font-mono text-sm font-bold px-9 py-5 rounded-xl transition-all duration-200 cursor-pointer shadow-lg shadow-[#8b5cf6]/25 whitespace-nowrap hover:-translate-y-0.5"
+            className="gradient-accent-bg gradient-accent-bg-hover text-white font-sans text-sm font-bold px-8 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
           >
-            {queryLoading ? 'TRACING GRAPH...' : 'ASK WHY'}
+            <span>{queryLoading ? 'Tracing...' : 'Ask'}</span>
+            <span className="text-base">↗</span>
           </button>
         </div>
       </form>
 
       {/* QUERY ERROR */}
       {queryError && (
-        <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/40 text-xs font-mono text-[#ef4444] rounded-xl">
+        <div className="p-4 bg-rose-500/10 border border-rose-500/30 text-xs font-mono text-rose-500 rounded-xl">
           {queryError}
         </div>
       )}

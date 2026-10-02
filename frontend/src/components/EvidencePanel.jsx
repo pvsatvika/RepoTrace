@@ -65,30 +65,30 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
     : evidence.filter(item => item.type === activeFilter);
 
   return (
-    <div className="py-6 space-y-6">
+    <div className="py-4 space-y-4">
       
       {/* HEADER & FILTER CONTROLS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1f2430] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme pb-3">
         <div>
-          <h3 className="text-xl font-extrabold text-[#f8fafc] tracking-tight font-sans">
+          <h3 className="text-lg font-extrabold text-theme-primary tracking-tight font-sans">
             Source Material Evidence
           </h3>
-          <p className="text-xs text-[#9ca3af] font-sans mt-0.5">
+          <p className="text-xs text-theme-secondary font-sans mt-0.5">
             Empirical repository evidence retrieved for this question.
           </p>
         </div>
 
         {/* CONTROLS */}
-        <div className="flex items-center gap-2 overflow-x-auto font-mono text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto font-mono text-xs">
           {filterTypes.map(ft => (
             ft.count > 0 || ft.key === 'all' ? (
               <button
                 key={ft.key}
                 onClick={() => setActiveFilter && setActiveFilter(ft.key)}
-                className={`px-3 py-1.5 rounded-lg border transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg border transition-all duration-200 whitespace-nowrap cursor-pointer text-[11px] ${
                   activeFilter === ft.key
-                    ? 'bg-[#06b6d4]/15 text-[#06b6d4] border-[#06b6d4] font-bold'
-                    : 'bg-transparent text-[#9ca3af] border-transparent hover:text-[#f8fafc]'
+                    ? 'bg-[var(--badge-bg)] text-[var(--accent-blue)] border-[var(--accent-blue)] font-bold'
+                    : 'bg-transparent text-theme-muted border-transparent hover:text-theme-primary'
                 }`}
               >
                 {ft.label} ({ft.count})
@@ -100,11 +100,11 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
 
       {/* VERTICAL RESEARCH FEED */}
       {filteredEvidence.length === 0 ? (
-        <div className="py-8 text-center text-[#9ca3af] text-xs font-mono bg-[#0d0e14] border border-[#1f2430] rounded-xl">
+        <div className="py-8 text-center text-theme-muted text-xs font-mono bg-theme-card border border-theme rounded-xl">
           No records match filter '{activeFilter}'.
         </div>
       ) : (
-        <div className="divide-y divide-[#1f2430]">
+        <div className="divide-y divide-theme">
           {filteredEvidence.map((item, idx) => {
             const hasUrl = item.url && item.url !== '#' && item.url.startsWith('http');
             const isSelected = selectedEvidenceId === idx;
@@ -120,21 +120,21 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                     setActiveFilter(item.type);
                   }
                 }}
-                className={`py-5 space-y-3 transition-all duration-200 cursor-pointer px-4 rounded-xl ${
+                className={`py-4 space-y-2.5 transition-all duration-200 cursor-pointer px-3.5 rounded-xl ${
                   isSelected
-                    ? 'bg-[#12141d] border border-[#8b5cf6] shadow-md'
-                    : 'hover:bg-[#12141d]/70 hover:-translate-y-0.5'
+                    ? 'bg-theme-card border border-[var(--accent-purple)] shadow-xs'
+                    : 'hover:bg-theme-card/70 hover:-translate-y-0.5'
                 }`}
               >
-                {/* 1. HUMAN-READABLE SUMMARY (PRIMARY TITLE) & SOURCE LINK */}
-                <div className="flex items-start justify-between gap-4">
+                {/* 1. TITLE & SOURCE LINK */}
+                <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-[#06b6d4]">
-                      <span className="bg-[#06b6d4]/10 px-2 py-0.5 border border-[#06b6d4]/30 rounded-md">
+                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase text-[var(--accent-blue)]">
+                      <span className="bg-[var(--badge-bg)] px-2 py-0.5 border border-[var(--badge-border)] rounded-md">
                         {formatChangeTypeLabel(item.type)}
                       </span>
                     </div>
-                    <h4 className="font-bold text-[#f8fafc] text-base font-sans leading-snug">
+                    <h4 className="font-bold text-theme-primary text-sm sm:text-base font-sans leading-snug">
                       {humanTitle}
                     </h4>
                   </div>
@@ -145,7 +145,7 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="font-mono text-xs text-[#06b6d4] hover:underline whitespace-nowrap font-bold flex items-center gap-1 shrink-0 mt-0.5"
+                      className="font-mono text-xs text-[var(--accent-blue)] hover:underline whitespace-nowrap font-bold flex items-center gap-1 shrink-0 mt-0.5"
                     >
                       <span>VIEW SOURCE</span>
                       <span>→</span>
@@ -153,27 +153,27 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                   )}
                 </div>
 
-                {/* 2. WHY IT MATTERS / EXCERPT */}
+                {/* 2. EXCERPT */}
                 {item.reason && (
-                  <p className="text-sm text-[#e2e8f0] font-sans pl-3 border-l-2 border-[#8b5cf6] my-2 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-theme-secondary font-sans pl-3 border-l-2 border-[var(--accent-purple)] my-2 leading-relaxed">
                     "{item.reason}"
                   </p>
                 )}
 
-                {/* 3, 4, 5, 7. METADATA (AUTHOR, DATE, SECONDARY TECHNICAL DETAILS) */}
-                <div className="text-xs text-[#6b7280] font-sans flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#1f2430]/60">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-[#9ca3af]">
+                {/* METADATA */}
+                <div className="text-xs text-theme-muted font-sans flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-theme/60">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-theme-secondary">
                       @{item.author || 'contributor'}
                     </span>
-                    <span className="text-[#4b5563]">·</span>
-                    <span className="text-[#9ca3af]">
+                    <span>·</span>
+                    <span className="text-theme-muted">
                       {item.date || 'Historical Record'}
                     </span>
                   </div>
 
                   {techId && (
-                    <span className="font-mono text-[11px] text-[#6b7280] bg-[#0d0e14] px-2 py-0.5 rounded border border-[#1f2430]">
+                    <span className="font-mono text-[11px] text-theme-muted bg-theme-input px-2 py-0.5 rounded border border-theme">
                       id: {techId}
                     </span>
                   )}

@@ -49,20 +49,20 @@ export default function HistoryTimeline({ evidence = [] }) {
   const timelineItems = [...evidence].slice(0, 10);
 
   return (
-    <div className="py-6 space-y-6">
+    <div className="py-4 space-y-6">
       
       {/* HEADER */}
       <div>
-        <h3 className="text-xl font-extrabold text-[#f8fafc] tracking-tight font-sans">
+        <h3 className="text-lg font-extrabold text-theme-primary tracking-tight font-sans">
           Chronological Evolution Timeline
         </h3>
-        <p className="text-xs text-[#9ca3af] font-sans mt-0.5">
+        <p className="text-xs text-theme-secondary font-sans mt-0.5">
           Chronological sequence of repository changes, refactors, and historical context.
         </p>
       </div>
 
       {/* CHRONOLOGICAL RAIL */}
-      <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-[#1f2430]">
+      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-theme">
         {timelineItems.map((item, idx) => {
           const hasUrl = item.url && item.url !== '#' && item.url.startsWith('http');
           const humanTitle = getHumanReadableTitle(item);
@@ -71,34 +71,34 @@ export default function HistoryTimeline({ evidence = [] }) {
           return (
             <div key={idx} className="relative group pl-3 space-y-2">
               {/* NODE DOT */}
-              <div className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-[#06b6d4] ring-4 ring-[#08090d]" />
+              <div className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-[var(--accent-blue)] ring-4 ring-theme-main" />
 
               {/* CHANGE TYPE & DATE */}
-              <div className="flex items-center justify-between text-xs font-mono text-[#6b7280]">
-                <span className="text-[#06b6d4] font-bold uppercase tracking-wider">
+              <div className="flex items-center justify-between text-xs font-mono text-theme-muted">
+                <span className="text-[var(--accent-blue)] font-bold uppercase tracking-wider">
                   {formatChangeTypeLabel(item.type)}
                 </span>
                 <span>{item.date || 'Historical Event'}</span>
               </div>
 
               {/* HUMAN READABLE TITLE */}
-              <h4 className="font-bold text-[#f8fafc] text-base font-sans leading-snug">
+              <h4 className="font-bold text-theme-primary text-sm sm:text-base font-sans leading-snug">
                 {humanTitle}
               </h4>
 
-              {/* REASON / WHY IT MATTERS EXCERPT */}
+              {/* REASON EXCERPT */}
               {item.reason && (
-                <p className="text-sm text-[#9ca3af] font-sans italic leading-relaxed pl-3 border-l-2 border-[#1f2430]">
+                <p className="text-xs sm:text-sm text-theme-secondary font-sans italic leading-relaxed pl-3 border-l-2 border-theme">
                   "{item.reason}"
                 </p>
               )}
 
-              {/* METADATA, TECHNICAL DETAILS & SOURCE LINK */}
-              <div className="flex flex-wrap items-center justify-between text-xs font-sans text-[#6b7280] pt-1 gap-2">
+              {/* METADATA & SOURCE LINK */}
+              <div className="flex flex-wrap items-center justify-between text-xs font-sans text-theme-muted pt-1 gap-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-[#9ca3af]">@{item.author || 'contributor'}</span>
+                  <span className="text-theme-secondary">@{item.author || 'contributor'}</span>
                   {techId && (
-                    <span className="font-mono text-[11px] text-[#6b7280] bg-[#0d0e14] px-2 py-0.5 rounded border border-[#1f2430]">
+                    <span className="font-mono text-[11px] text-theme-muted bg-theme-input px-2 py-0.5 rounded border border-theme">
                       commit: {techId}
                     </span>
                   )}
@@ -109,7 +109,7 @@ export default function HistoryTimeline({ evidence = [] }) {
                     href={item.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-xs text-[#06b6d4] hover:underline font-bold flex items-center gap-1"
+                    className="font-mono text-xs text-[var(--accent-blue)] hover:underline font-bold flex items-center gap-1"
                   >
                     <span>VIEW SOURCE</span>
                     <span>→</span>

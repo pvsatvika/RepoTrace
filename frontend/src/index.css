@@ -1,18 +1,55 @@
 @import "tailwindcss";
 
+:root {
+  --bg-main: #ffffff;
+  --bg-card: #f5f8ff;
+  --bg-card-hover: #edf3ff;
+  --bg-input: #ffffff;
+  --text-primary: #0d2148;
+  --text-secondary: #58739f;
+  --text-muted: #8b9ebf;
+  --border-color: #d7e5fc;
+  --border-hover: #a7c5fb;
+  --accent-blue: #367dff;
+  --accent-purple: #7460ff;
+  --badge-bg: #eaf1ff;
+  --badge-border: #c8dcff;
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --shadow-color: rgba(54, 125, 255, 0.08);
+}
+
+.dark {
+  --bg-main: #070d1b;
+  --bg-card: #0c1528;
+  --bg-card-hover: #121e36;
+  --bg-input: #070d1b;
+  --text-primary: #f3f6ff;
+  --text-secondary: #a7b8d8;
+  --text-muted: #62779d;
+  --border-color: #1b3156;
+  --border-hover: #29487d;
+  --accent-blue: #479eff;
+  --accent-purple: #7660ff;
+  --badge-bg: #0f1c35;
+  --badge-border: #1b3156;
+  --header-bg: rgba(7, 13, 27, 0.85);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
 @layer base {
   body {
-    background-color: #08090d;
-    color: #f3f4f6;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
     font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow-x: hidden;
     line-height: 1.6;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   h1, h2, h3, h4 {
-    color: #ffffff;
+    color: var(--text-primary);
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
   }
 
   code, pre, .font-mono {
@@ -20,20 +57,34 @@
   }
 }
 
-/* Developer Product Visual Utilities */
-.bg-deep-black { background-color: #08090d; }
-.bg-surface-card { background-color: #12141d; }
-.bg-surface-hover { background-color: #1a1d2a; }
-.bg-input-dark { background-color: #0d0e14; }
+/* Dynamic Theme Utilities */
+.bg-theme-main { background-color: var(--bg-main); }
+.bg-theme-card { background-color: var(--bg-card); }
+.bg-theme-card-hover:hover { background-color: var(--bg-card-hover); }
+.bg-theme-input { background-color: var(--bg-input); }
+.bg-theme-header { background-color: var(--header-bg); }
 
-.text-white-bright { color: #ffffff; }
-.text-muted-gray { color: #9ca3af; }
-.text-subtle-gray { color: #6b7280; }
+.text-theme-primary { color: var(--text-primary); }
+.text-theme-secondary { color: var(--text-secondary); }
+.text-theme-muted { color: var(--text-muted); }
 
-.accent-purple { color: #8b5cf6; }
-.accent-cyan { color: #06b6d4; }
+.border-theme { border-color: var(--border-color); }
+.border-theme-hover:hover { border-color: var(--border-hover); }
 
-.border-subtle-dark { border-color: #1f2430; }
+/* Accent Gradients */
+.gradient-accent-text {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-accent-bg {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+}
+
+.gradient-accent-bg-hover:hover {
+  background: linear-gradient(135deg, #2b6ce8 0%, #634ee8) !important;
+}
 
 /* Custom Product Scrollbar */
 ::-webkit-scrollbar {
@@ -41,12 +92,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #08090d;
+  background: var(--bg-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2430;
+  background: var(--border-color);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #8b5cf6;
+  background: var(--accent-blue);
 }
