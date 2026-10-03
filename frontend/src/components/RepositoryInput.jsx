@@ -44,7 +44,6 @@ export default function RepositoryInput({
     } else if (cleanRepo.startsWith('http://github.com/')) {
       cleanRepo = cleanRepo.replace('http://github.com/', '');
     }
-    // Remove trailing slash
     cleanRepo = cleanRepo.replace(/\/$/, '');
     
     if (cleanRepo !== repository) {
@@ -69,7 +68,7 @@ export default function RepositoryInput({
 
       {/* REPOSITORY INPUT BAR */}
       <form onSubmit={onSubmitForm} className="space-y-4">
-        <div className="relative flex flex-col sm:flex-row items-stretch gap-3 bg-theme-card p-2 rounded-2xl border border-theme shadow-xs">
+        <div className="relative flex flex-col sm:flex-row items-stretch gap-3 bg-theme-card p-2 rounded-2xl border border-theme shadow-theme-sm">
           
           <div className="relative flex-1 flex items-center pl-4 pr-3">
             {/* GITHUB CAT ICON */}
@@ -81,7 +80,7 @@ export default function RepositoryInput({
               type="text"
               value={repository}
               onChange={(e) => setRepository(e.target.value)}
-              placeholder="https://github.com/username/repository"
+              placeholder="Enter a GitHub repository URL"
               disabled={ingestLoading || backendUnavailable}
               className="w-full bg-transparent py-3 text-sm sm:text-base font-sans text-theme-primary placeholder:text-theme-muted focus:outline-none transition-all duration-200 disabled:opacity-50"
             />
@@ -90,7 +89,7 @@ export default function RepositoryInput({
           <button
             type="submit"
             disabled={ingestLoading || !repository.trim() || backendUnavailable}
-            className="gradient-accent-bg gradient-accent-bg-hover text-white font-sans text-sm font-bold px-6 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
+            className="gradient-accent-bg gradient-accent-bg-hover text-white font-sans text-sm font-bold px-6 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-theme-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
           >
             <span>{ingestLoading ? 'Analyzing...' : 'Analyze Repository'}</span>
             <span className="text-base">→</span>

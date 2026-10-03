@@ -71,11 +71,11 @@ export default function HistoryTimeline({ evidence = [] }) {
           return (
             <div key={idx} className="relative group pl-3 space-y-2">
               {/* NODE DOT */}
-              <div className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-[var(--accent-blue)] ring-4 ring-theme-main" />
+              <div className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full bg-[var(--accent-blue)] ring-4 ring-theme-main transition-transform group-hover:scale-125" />
 
               {/* CHANGE TYPE & DATE */}
               <div className="flex items-center justify-between text-xs font-mono text-theme-muted">
-                <span className="text-[var(--accent-blue)] font-bold uppercase tracking-wider">
+                <span className="text-[var(--accent-blue)] font-bold uppercase tracking-wider bg-[var(--badge-bg)] px-2 py-0.5 border border-[var(--badge-border)] rounded-md">
                   {formatChangeTypeLabel(item.type)}
                 </span>
                 <span>{item.date || 'Historical Event'}</span>
@@ -88,15 +88,15 @@ export default function HistoryTimeline({ evidence = [] }) {
 
               {/* REASON EXCERPT */}
               {item.reason && (
-                <p className="text-xs sm:text-sm text-theme-secondary font-sans italic leading-relaxed pl-3 border-l-2 border-theme">
+                <p className="text-xs sm:text-sm text-theme-secondary font-sans italic leading-relaxed pl-3 border-l-2 border-[var(--accent-purple)]">
                   "{item.reason}"
                 </p>
               )}
 
               {/* METADATA & SOURCE LINK */}
-              <div className="flex flex-wrap items-center justify-between text-xs font-sans text-theme-muted pt-1 gap-2">
+              <div className="flex flex-wrap items-center justify-between text-xs font-sans text-theme-muted pt-1 gap-2 border-t border-theme/50">
                 <div className="flex items-center gap-3">
-                  <span className="text-theme-secondary">@{item.author || 'contributor'}</span>
+                  <span className="text-theme-secondary font-medium">@{item.author || 'contributor'}</span>
                   {techId && (
                     <span className="font-mono text-[11px] text-theme-muted bg-theme-input px-2 py-0.5 rounded border border-theme">
                       commit: {techId}

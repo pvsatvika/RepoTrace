@@ -226,26 +226,28 @@ export default function App() {
         onOpenContact={() => setContactModalOpen(true)}
       />
 
-      {/* DESKTOP-FIRST WORKSPACE CONTAINER (MAX-WIDTH: 1360PX) */}
+      {/* WORKSPACE CONTAINER (MAX-WIDTH: 1360PX) */}
       <main className="max-w-[1360px] mx-auto px-6 sm:px-10 py-6 space-y-12 sm:space-y-16">
         
         {/* 1. EXPLORE / HERO SECTION */}
-        <section id="explore" className="scroll-mt-24 py-4 sm:py-6 space-y-10 border-b border-theme">
+        <section id="explore" className="scroll-mt-24 py-4 sm:py-8 space-y-10 border-b border-theme">
           
           {/* HERO LAYOUT: 2-COLUMN ON DESKTOP */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pt-2">
             
             {/* HERO TEXT COLUMN (7 COLS) */}
-            <div className="lg:col-span-7 space-y-5">
+            <div className="lg:col-span-7 space-y-6">
               
               {/* TAGLINE PILL */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--badge-bg)] border border-[var(--badge-border)] text-[var(--accent-blue)] font-mono text-xs font-semibold">
-                Understand · Learn · Build Better
+                Understand · Trace · Build Better
               </div>
 
-              {/* GIANT HEADLINE */}
-              <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-extrabold text-theme-primary tracking-tight leading-[1.05]">
-                Repo<span className="gradient-accent-text">Trace</span>
+              {/* EDITORIAL HEADLINE */}
+              <h1 className="text-4xl sm:text-6xl lg:text-[72px] font-extrabold text-theme-primary tracking-tight leading-[1.08]">
+                Every codebase<br />
+                <span className="font-serif-editorial italic font-normal text-theme-secondary">has a </span>
+                <span className="gradient-accent-text font-extrabold">story.</span>
               </h1>
 
               {/* SUBTITLE */}
@@ -255,7 +257,7 @@ export default function App() {
 
               {/* DESCRIPTION */}
               <p className="text-sm sm:text-base text-theme-secondary font-sans leading-relaxed max-w-2xl">
-                Connect a public GitHub repository and uncover the historical decisions, commits, PR discussions, and architecture to see why the code is the way it is.
+                RepoTrace reconstructs historical decisions, commits, PR discussions, and architectural trade-offs so you can understand why your code is the way it is.
               </p>
             </div>
 
@@ -265,7 +267,7 @@ export default function App() {
               <div className="absolute -inset-4 bg-gradient-to-r from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 rounded-3xl blur-2xl opacity-60 pointer-events-none" />
 
               {/* CODE EDITOR WINDOW MOCKUP */}
-              <div className="relative bg-theme-card border border-theme rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+              <div className="relative bg-theme-card border border-theme rounded-2xl p-4 sm:p-5 shadow-theme-lg space-y-4">
                 
                 {/* WINDOW TITLE BAR */}
                 <div className="flex items-center justify-between border-b border-theme pb-3">
@@ -275,7 +277,7 @@ export default function App() {
                     <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
                   </div>
                   <div className="text-[11px] font-mono text-theme-muted">
-                    architecture.ts — why-the-code
+                    architecture.ts — RepoTrace Engine
                   </div>
                 </div>
 
@@ -324,7 +326,7 @@ export default function App() {
                 </div>
 
                 {/* OVERLAPPING FLOATING CODE BADGE */}
-                <div className="absolute -bottom-4 -right-4 gradient-accent-bg text-white font-mono font-bold text-base px-4 py-2.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-2">
+                <div className="absolute -bottom-4 -right-4 gradient-accent-bg text-white font-mono font-bold text-base px-4 py-2.5 rounded-xl shadow-theme-md border border-white/20 flex items-center gap-2">
                   <span>&lt;/&gt;</span>
                 </div>
 
@@ -423,7 +425,7 @@ export default function App() {
         </section>
 
 
-        {/* 3. HISTORY SECTION */}
+        {/* 3. REPOSITORY EVOLUTION HISTORY SECTION */}
         <section id="history" className="scroll-mt-24 py-8 space-y-8 border-b border-theme">
           
           <div className="space-y-1.5">
@@ -434,8 +436,8 @@ export default function App() {
               </svg>
               Repository History
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-theme-primary tracking-tight">
-              Repository History
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-theme-primary tracking-tight font-sans">
+              Repository Evolution History
             </h2>
             <p className="text-xs sm:text-sm text-theme-secondary font-sans">
               Explore commits, PRs, and discussions to see the full story.
@@ -458,8 +460,8 @@ export default function App() {
               </div>
             </div>
           ) : !hasAnalyzedRepo ? (
-            /* STATE A: RESTRAINED EMPTY STATE (MATCHING REFERENCE UI) */
-            <div className="p-12 rounded-2xl bg-theme-card border border-theme text-center space-y-4 shadow-xs">
+            /* STATE A: RESTRAINED EMPTY STATE */
+            <div className="p-12 rounded-2xl bg-theme-card border border-theme text-center space-y-4 shadow-theme-sm">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--badge-bg)] text-[var(--accent-blue)] border border-[var(--badge-border)]">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -491,7 +493,7 @@ export default function App() {
 
                   <button
                     onClick={() => navigateToSection('ask-why')}
-                    className="gradient-accent-bg text-white font-mono text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-xs hover:-translate-y-0.5"
+                    className="gradient-accent-bg text-white font-mono text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-theme-sm hover:-translate-y-0.5"
                   >
                     QUERY REPOSITORY HISTORY →
                   </button>
@@ -549,7 +551,7 @@ export default function App() {
         </section>
 
 
-        {/* 4. HOW IT WORKS SECTION (MATCHING REFERENCE UI) */}
+        {/* 4. HOW IT WORKS SECTION */}
         <section id="how-it-works" className="scroll-mt-24 py-8 space-y-8">
           
           {/* SECTION HEADER */}
@@ -558,17 +560,17 @@ export default function App() {
               <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 18h6m-5 3h4m-7-6a7 7 0 1 1 12 0c0 2.5-1.5 4-3 5.5s-2 2.5-2 4.5H10c0-2-.5-3-2-4.5S6 14.5 6 12a7 7 0 0 1 3-6" />
               </svg>
-              How Why The Code Is Like This Works
+              How RepoTrace Works
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-theme-primary tracking-tight">
-              How Why The Code Is Like This Works
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-theme-primary tracking-tight font-sans">
+              How RepoTrace Works
             </h2>
             <p className="text-xs sm:text-sm text-theme-secondary font-sans">
               From repository to answers — in just a few steps
             </p>
           </div>
 
-          {/* 3 STEPS HORIZONTAL LAYOUT */}
+          {/* 3 STEPS WORKFLOW (DESKTOP HORIZONTAL, MOBILE VERTICAL) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
             {[
               {
@@ -589,10 +591,10 @@ export default function App() {
             ].map((step, idx) => (
               <div
                 key={step.num}
-                className="p-6 rounded-2xl bg-theme-card border border-theme flex items-center gap-4 relative group hover:border-[var(--accent-blue)] transition-all duration-200 shadow-xs"
+                className="p-6 rounded-2xl bg-theme-card border border-theme flex items-center gap-4 relative group hover:border-[var(--accent-blue)] transition-all duration-200 shadow-theme-sm"
               >
                 {/* NUMBERED CIRCLE */}
-                <div className="w-10 h-10 rounded-full gradient-accent-bg text-white font-mono font-bold flex items-center justify-center text-sm shrink-0 shadow-xs">
+                <div className="w-10 h-10 rounded-full gradient-accent-bg text-white font-mono font-bold flex items-center justify-center text-sm shrink-0 shadow-theme-sm">
                   {step.num}
                 </div>
 
@@ -628,7 +630,7 @@ export default function App() {
       {/* CONTACT MODAL */}
       {contactModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-theme-card border border-theme rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-xl">
+          <div className="bg-theme-card border border-theme rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-theme-lg">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-theme-primary font-sans">Contact & Support</h3>
               <button
@@ -646,8 +648,8 @@ export default function App() {
             <div className="space-y-2 font-mono text-xs text-theme-primary pt-2 border-t border-theme">
               <div className="flex items-center justify-between">
                 <span className="text-theme-muted">GitHub Repository:</span>
-                <a href="https://github.com/pvsatvika/why-the-code-is-like-this" target="_blank" rel="noreferrer" className="text-[var(--accent-blue)] hover:underline">
-                  pvsatvika/why-the-code-is-like-this
+                <a href="https://github.com/pvsatvika/RepoTrace" target="_blank" rel="noreferrer" className="text-[var(--accent-blue)] hover:underline">
+                  pvsatvika/RepoTrace
                 </a>
               </div>
               <div className="flex items-center justify-between">

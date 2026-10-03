@@ -122,7 +122,7 @@ export default function EvidencePanel({ evidence = [], activeFilter = 'all', set
                 }}
                 className={`py-4 space-y-2.5 transition-all duration-200 cursor-pointer px-3.5 rounded-xl ${
                   isSelected
-                    ? 'bg-theme-card border border-[var(--accent-purple)] shadow-xs'
+                    ? 'bg-theme-card border border-[var(--accent-purple)] shadow-theme-sm'
                     : 'hover:bg-theme-card/70 hover:-translate-y-0.5'
                 }`}
               >

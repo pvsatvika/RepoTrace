@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import LogoMark from './LogoMark';
 
 export default function Header({
@@ -10,15 +10,18 @@ export default function Header({
   onNavigate,
   onOpenContact
 }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isNeo4jConnected = health?.services?.neo4j?.connected;
 
   const navItems = [
     { id: 'explore', label: 'Home' },
     { id: 'how-it-works', label: 'About' },
     { id: 'history', label: 'History' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   const handleNavClick = (id) => {
+    setMobileMenuOpen(false);
     if (id === 'contact') {
       if (onOpenContact) {
         onOpenContact();
@@ -40,9 +43,12 @@ export default function Header({
           className="group flex items-center gap-3 cursor-pointer select-none"
         >
           <LogoMark size={30} />
-          <h1 className="text-base sm:text-lg font-bold tracking-tight text-theme-primary font-mono group-hover:text-[var(--accent-blue)] transition-colors">
-            RepoTrace
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-theme-primary font-mono group-hover:text-[var(--accent-blue)] transition-colors">
+              RepoTrace
+            </h1>
+            <span className="text-[10px] text-theme-muted font-sans hidden sm:inline-block">Code Archaeology Engine</span>
+          </div>
 
           {repository && (
             <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-theme text-xs font-mono text-theme-muted">
@@ -52,8 +58,8 @@ export default function Header({
           )}
         </div>
 
-        {/* CENTER NAVIGATION & RIGHT THEME TOGGLE */}
-        <div className="flex items-center gap-6 sm:gap-8">
+        {/* CENTER NAVIGATION & RIGHT THEME TOGGLE (DESKTOP) */}
+        <div className="hidden md:flex items-center gap-6 sm:gap-8">
           
           <nav className="flex items-center gap-6 text-sm font-sans font-medium">
             {navItems.map((item) => {
@@ -77,7 +83,7 @@ export default function Header({
             })}
           </nav>
 
-          {/* STATUS INDICATOR (OPTIONAL / COMPACT) */}
+          {/* ENGINE STATUS BADGE */}
           {health && (
             <div className="hidden xl:flex items-center gap-2 text-xs font-mono px-2.5 py-1 rounded-md bg-theme-card border border-theme text-theme-muted">
               <span className={`w-2 h-2 rounded-full ${isNeo4jConnected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
@@ -120,7 +126,56 @@ export default function Header({
 
         </div>
 
+        {/* MOBILE HEADER ACTIONS */}
+        <div className="flex md:hidden items-center gap-3">
+          {/* THEME TOGGLE SWITCH (MOBILE) */}
+          <button
+            onClick={onToggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            className="p-2 rounded-lg border border-theme bg-theme-card text-theme-secondary hover:text-theme-primary cursor-pointer"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
+          {/* MOBILE MENU BURGER */}
+          <button
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label="Toggle mobile navigation menu"
+            className="p-2 rounded-lg border border-theme bg-theme-card text-theme-secondary hover:text-theme-primary cursor-pointer"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {mobileMenuOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : (
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
+
       </div>
+
+      {/* MOBILE MENU PANEL */}
+      {mobileMenuOpen && (
+        <div className="md:hidden pt-3 pb-2 border-t border-theme mt-3 space-y-2 font-sans text-sm">
+          {navItems.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-[var(--badge-bg)] text-[var(--accent-blue)] font-bold'
+                    : 'text-theme-secondary hover:bg-theme-card hover:text-theme-primary'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

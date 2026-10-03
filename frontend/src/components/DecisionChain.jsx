@@ -17,7 +17,8 @@ export default function DecisionChain({ question, evidence = [], selectedType = 
       
       {/* HEADER */}
       <div className="flex items-center justify-between text-xs font-mono">
-        <span className="text-[var(--accent-purple)] font-bold uppercase tracking-wider">
+        <span className="text-[var(--accent-purple)] font-bold uppercase tracking-wider flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[var(--accent-purple)] inline-block" />
           HISTORICAL TRACEABILITY TRAIL
         </span>
         <span className="text-theme-muted text-xs">Click node to filter evidence</span>
@@ -40,7 +41,7 @@ export default function DecisionChain({ question, evidence = [], selectedType = 
                 onClick={() => onSelectType && onSelectType(node.key)}
                 className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? 'gradient-accent-bg text-white border-transparent shadow-md -translate-y-0.5 font-bold'
+                    ? 'gradient-accent-bg text-white border-transparent shadow-theme-sm -translate-y-0.5 font-bold'
                     : hasData
                     ? 'bg-theme-card text-theme-secondary border-theme hover:text-theme-primary hover:border-[var(--accent-blue)]'
                     : 'bg-theme-card/50 text-theme-muted border-theme/50'

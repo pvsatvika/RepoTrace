@@ -12,9 +12,12 @@ export default function WhyThisAnswer({ evidenceCount = 0, confidence = 'support
   ];
 
   return (
-    <div className="bg-theme-card border border-theme rounded-2xl p-5 sm:p-6 space-y-3 font-mono text-xs shadow-xs">
+    <div className="bg-theme-card border border-theme rounded-2xl p-5 sm:p-6 space-y-3 font-mono text-xs shadow-theme-sm">
       <div className="flex items-center justify-between text-theme-muted">
-        <span className="font-bold uppercase tracking-wider text-[var(--accent-purple)]">PIPELINE PROVENANCE</span>
+        <span className="font-bold uppercase tracking-wider text-[var(--accent-purple)] flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-purple)] inline-block" />
+          PIPELINE PROVENANCE
+        </span>
         <span className={isSupported ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}>
           {isSupported ? 'VERIFIED GROUNDED ANSWER' : 'LIMITED GRAPH CONTEXT'}
         </span>

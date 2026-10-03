@@ -15,8 +15,9 @@ function FormattedAnswerText({ text }) {
         if (isSectionHeader) {
           const title = trimmed.replace(/^###\s+/, '');
           return (
-            <div key={idx} className="pt-5 pb-1 border-b border-theme flex items-center justify-between">
-              <h3 className="text-sm font-bold tracking-wider font-mono uppercase text-[var(--accent-blue)]">
+            <div key={idx} className="pt-6 pb-1.5 border-b border-theme flex items-center justify-between">
+              <h3 className="text-sm font-bold tracking-wider font-mono uppercase text-[var(--accent-blue)] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] inline-block" />
                 {title}
               </h3>
             </div>
@@ -25,7 +26,7 @@ function FormattedAnswerText({ text }) {
 
         if (trimmed.startsWith('#### ')) {
           return (
-            <h4 key={idx} className="text-base font-bold text-theme-primary font-mono pt-2">
+            <h4 key={idx} className="text-base font-bold text-theme-primary font-mono pt-3">
               {trimmed.replace('#### ', '')}
             </h4>
           );
@@ -33,7 +34,7 @@ function FormattedAnswerText({ text }) {
 
         if (trimmed.startsWith('> ')) {
           return (
-            <blockquote key={idx} className="border-l-2 border-[var(--accent-purple)] bg-theme-input p-4 rounded-xl text-theme-primary text-sm italic my-3 border border-theme">
+            <blockquote key={idx} className="border-l-2 border-[var(--accent-purple)] bg-theme-input p-4 rounded-xl text-theme-primary text-sm italic my-4 border border-theme">
               {trimmed.replace('> ', '')}
             </blockquote>
           );
@@ -76,7 +77,8 @@ export default function AnswerPanel({ queryResult }) {
       {/* CANVAS HEADLINE & CONFIDENCE BADGE */}
       <div className="space-y-3 border-b border-theme pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-          <span className="text-xs font-bold text-[var(--accent-purple)] uppercase tracking-wider">
+          <span className="text-xs font-bold text-[var(--accent-purple)] uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent-purple)] inline-block" />
             SYNTHESIZED HISTORICAL RATIONALE
           </span>
 
@@ -86,7 +88,7 @@ export default function AnswerPanel({ queryResult }) {
             }`}>
               {isSupported ? 'CONFIDENCE: SUPPORTED' : 'LIMITED EVIDENCE'}
             </span>
-            <span>·</span>
+            <span className="text-theme-muted">·</span>
             <span className="text-theme-muted"><strong className="text-theme-primary">{evidenceCount}</strong> SOURCES RETRIEVED</span>
           </div>
         </div>
@@ -103,7 +105,7 @@ export default function AnswerPanel({ queryResult }) {
       )}
 
       {/* SYNTHESIZED REASONING BODY */}
-      <div className="bg-theme-card border border-theme rounded-2xl p-6 sm:p-8 shadow-xs">
+      <div className="bg-theme-card border border-theme rounded-2xl p-6 sm:p-8 shadow-theme-sm">
         <FormattedAnswerText text={queryResult.answer} />
       </div>
 
