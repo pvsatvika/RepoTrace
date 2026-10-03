@@ -17,7 +17,6 @@ export default function Header({
     { id: 'explore', label: 'Home' },
     { id: 'how-it-works', label: 'About' },
     { id: 'history', label: 'History' },
-    { id: 'contact', label: 'Contact' },
   ];
 
   const handleNavClick = (id) => {
