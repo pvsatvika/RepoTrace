@@ -16,19 +16,28 @@ const SARVAM_API_URL = 'https://api.sarvam.ai/v1/chat/completions';
 export function detectQuestionIntent(question) {
   const q = (question || '').toLowerCase();
 
-  if (/\b(data structure|schema|storage|versioning|rollback|persistence|caching|dvc|dataset|database|pointer|placeholder|snapshot|delta)\b/i.test(q)) {
+  // 1. HISTORICAL / EVOLUTION (Top Priority!)
+  if (/\b(what changed|how did it evolve|why was it changed|why were|history|originally|over time|introduced|replaced|refactored|previous approach|evolution|course of its development|commit|merged|author|pr)\b/i.test(q)) {
+    return 'HISTORICAL';
+  }
+
+  // 2. DATA / STORAGE
+  if (/\b(data structure|schema|storage|versioning|rollback|persistence|caching|dvc|pointer|placeholder|snapshot|delta)\b/i.test(q)) {
     return 'DATA_STORAGE';
   }
 
+  // 3. PERFORMANCE
   if (/\b(performance|memory|speed|optimization|scalable|scalability|throughput|leak|bottleneck|efficiency|optimize|latency)\b/i.test(q)) {
     return 'PERFORMANCE';
   }
 
-  if (/\b(architecture|system design|component|boundary|pattern|tradeoff|design|framework|module|how does|how is)\b/i.test(q) && !/\b(why was|who made|who committed|historical|history|commit|pr)\b/i.test(q)) {
+  // 4. ARCHITECTURAL
+  if (/\b(architecture|system design|component|boundary|pattern|tradeoff|design|framework|module|how does|how is)\b/i.test(q)) {
     return 'ARCHITECTURAL';
   }
 
-  if (/\b(how it works|file|function|class|method|implementation|codebase|where is|executed|execution|logic)\b/i.test(q) && !/\b(why was|who|history|commit|pr)\b/i.test(q)) {
+  // 5. IMPLEMENTATION
+  if (/\b(how it works|file|function|class|method|implementation|codebase|where is|executed|execution|logic)\b/i.test(q)) {
     return 'IMPLEMENTATION';
   }
 
@@ -59,7 +68,14 @@ export async function generateAnswerWithEvidence(question, evidence, structuredC
   }
 
   let sectionHeaders = '';
-  if (intent === 'ARCHITECTURAL' || intent === 'IMPLEMENTATION') {
+  if (intent === 'HISTORICAL') {
+    sectionHeaders = `1. DIRECT ANSWER
+2. WHAT CHANGED
+3. WHY IT CHANGED
+4. HOW IT EVOLVED
+5. EVIDENCE
+6. UNCERTAINTIES`;
+  } else if (intent === 'ARCHITECTURAL' || intent === 'IMPLEMENTATION') {
     sectionHeaders = `1. DIRECT ANSWER
 2. HOW IT WORKS
 3. KEY COMPONENTS
@@ -78,27 +94,22 @@ export async function generateAnswerWithEvidence(question, evidence, structuredC
 3. BOTTLENECK / TRADEOFF
 4. IMPLEMENTATION EVIDENCE
 5. LIMITATIONS`;
-  } else {
-    sectionHeaders = `1. WHAT CHANGED
-2. WHY IT CHANGED
-3. HOW IT EVOLVED
-4. EVIDENCE
-5. WHO / WHEN`;
   }
 
   const systemPrompt = `You are a Senior Software Archaeology & Architecture Expert explaining repository code, design, and history for "${repoName}".
 Your job is to answer developer questions directly in clean, easy-to-scan plain English.
 
-CRITICAL ANSWER FORMATTING RULES:
-1. Provide 2-5 bullet points per section with concise, technical sentences.
-2. Bold important technical terms (e.g. **metadata pointers**, **MD5 hash**, **content-addressable storage**).
-3. Use inline code backticks for filenames, functions, paths, and config names (e.g. \`.dvc\`, \`dvc.yaml\`, \`Cache\`).
-4. Ground all claims STRICTLY in the provided Evidence for "${repoName}".
+CRITICAL ANTI-HALLUCINATION & HISTORICAL GROUNDING RULES:
+1. Base all historical claims STRICTLY on retrieved Commit SHAs, dates, messages, and PR descriptions for "${repoName}".
+2. NEVER claim that the project "shifted", "evolved", "was introduced", or "was changed because of X" unless retrieved historical commit/PR evidence explicitly supports that claim.
+3. If a commit or evidence shows a change occurred but does NOT document why, explicitly state:
+   "The repository shows that this changed, but it does not document why."
+4. DO NOT invent motivations such as enterprise requirements, safety concerns, scalability, production readiness, performance, cost, or reliability unless explicitly supported by commit/PR text.
 5. Clearly distinguish between:
-   - DIRECT CODE/DOCUMENTATION EVIDENCE
-   - HISTORICAL EVIDENCE
-   - INFERENCE
-6. Never invent implementation details. If the evidence is incomplete or missing, explicitly state what is unknown.
+   - HISTORICAL EVIDENCE (what a commit SHA, message, or author establishes)
+   - CURRENT-CODEBASE EVIDENCE (what current docs/files show)
+   - INFERENCE (reasonable technical deduction, explicitly labeled as inference)
+6. Provide 2-4 concise bullet points per section with bold technical keywords and inline code backticks.
 7. Format output using EXACTLY these section headers:
 
 ${sectionHeaders}`;
@@ -281,11 +292,12 @@ function generateFallbackAnswer(question, evidence, confidence, errorNotice = nu
 
   // Default: HISTORICAL
   if (confidence === 'insufficient_evidence' || !hasEvidence) {
-    output += `1. WHAT CHANGED\n* No matching historical evidence (commits, PRs, or issues) found in graph database for **${repoName}**.\n\n`;
-    output += `2. WHY IT CHANGED\n* No recorded issue or pull request description explains why changes occurred.\n\n`;
-    output += `3. HOW IT EVOLVED\n* Evolution trajectory is not documented in available graph records.\n\n`;
-    output += `4. EVIDENCE\n* No matching commit or PR records.\n\n`;
-    output += `5. WHO / WHEN\n* Not specified in repository records.`;
+    output += `1. DIRECT ANSWER\n* No matching historical evidence (commits, PRs, or issues) found in graph database for **${repoName}**.\n\n`;
+    output += `2. WHAT CHANGED\n* Code evolution records are not documented in the available graph evidence.\n\n`;
+    output += `3. WHY IT CHANGED\n* The repository shows no matching evidence to explain why changes occurred.\n\n`;
+    output += `4. HOW IT EVOLVED\n* Evolution trajectory is not documented in available graph records.\n\n`;
+    output += `5. EVIDENCE\n* No matching commit or PR records.\n\n`;
+    output += `6. UNCERTAINTIES\n* All historical changes and evolution motivations remain unverified.`;
     return output;
   }
 
@@ -293,32 +305,42 @@ function generateFallbackAnswer(question, evidence, confidence, errorNotice = nu
   const authors = [...new Set(evidence.map((e) => e.author).filter((a) => a && a !== 'Unknown'))];
   const sources = evidence.map((e) => e.url).filter((u) => u && u !== '#');
 
-  output += `1. WHAT CHANGED\n* **${topEvidence.title}**: ${topEvidence.reason}\n\n`;
+  output += `1. DIRECT ANSWER\n`;
+  output += `* **HISTORICAL EVIDENCE**: **${repoName}** evolved across ${evidence.length} recorded commits and pull requests.\n`;
+  output += `* The primary documented change was **${topEvidence.title}** by @${topEvidence.author} on ${topEvidence.date || 'recorded date'}.\n\n`;
 
-  output += `2. WHY IT CHANGED\n* According to repository records, changes were merged to address:\n`;
-  evidence.slice(0, 3).forEach((item) => {
-    output += `  - **${item.title}**: ${item.reason}\n`;
+  output += `2. WHAT CHANGED\n`;
+  evidence.slice(0, 4).forEach((item) => {
+    output += `* **HISTORICAL EVIDENCE**: **${item.title}** (by @${item.author}): ${item.reason}\n`;
   });
   output += `\n`;
 
-  output += `3. HOW IT EVOLVED\n* Recorded in **${topEvidence.type.toUpperCase()}**: ${topEvidence.title}.\n\n`;
+  output += `3. WHY IT CHANGED\n`;
+  const reasons = evidence.filter(e => e.reason && e.reason.length > 15);
+  if (reasons.length > 0) {
+    reasons.slice(0, 3).forEach((item) => {
+      output += `* **HISTORICAL EVIDENCE**: Commit message for **${item.title}** states: ${item.reason}\n`;
+    });
+  } else {
+    output += `* The repository shows that these changes occurred, but commit messages do not document why.\n`;
+  }
+  output += `\n`;
 
-  output += `4. EVIDENCE\n`;
+  output += `4. HOW IT EVOLVED\n`;
+  output += `* **Chronological Progression**: Recorded changes progressed across ${evidence.length} commits from earlier updates to recent refactors.\n\n`;
+
+  output += `5. EVIDENCE\n`;
   if (sources.length > 0) {
-    sources.forEach((src) => {
-      output += `- ${src}\n`;
+    sources.slice(0, 5).forEach((src) => {
+      output += `- [HISTORICAL EVIDENCE] ${src}\n`;
     });
     output += `\n`;
   } else {
     output += `- N/A\n\n`;
   }
 
-  output += `5. WHO / WHEN\n`;
-  if (authors.length > 0) {
-    output += `* Contributed by ${authors.map((a) => `@${a}`).join(', ')} on ${topEvidence.date || 'recorded date'}.\n`;
-  } else {
-    output += `* Not specified in repository records.\n`;
-  }
+  output += `6. UNCERTAINTIES\n`;
+  output += `* **INFERENCE**: Motivations not explicitly written in commit messages remain unverified.\n`;
 
   return output;
 }

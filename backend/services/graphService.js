@@ -1,5 +1,6 @@
 import neo4j from 'neo4j-driver';
 import dotenv from 'dotenv';
+import { detectQuestionIntent } from './sarvamService.js';
 
 dotenv.config();
 
@@ -563,7 +564,10 @@ export async function querySubgraph(question, repository = null) {
       }
     }
 
-    console.log(`[Neo4j Service] Repository-isolated GraphRAG query for repo: "${repoId || 'ALL'}" | Question: "${question}"...`);
+    const intent = detectQuestionIntent(question);
+    const isHistorical = intent === 'HISTORICAL';
+
+    console.log(`[Neo4j Service] Repository-isolated GraphRAG query for repo: "${repoId || 'ALL'}" | Question: "${question}" | Intent: "${intent}"...`);
 
     const words = question
       .toLowerCase()
@@ -573,113 +577,121 @@ export async function querySubgraph(question, repository = null) {
 
     const keyword = words[0] || '';
 
-    // Repository-Scoped Cypher Traversal
-    const cypher = `
-      // 1. Decisions for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT|HAS_PULL_REQUEST*1..2]->(parent)
-      MATCH (parent)-[:SUPPORTS|IMPLEMENTS|MADE_IN*1..2]-(dec:Decision)
-      WHERE ($keyword = '' OR toLower(dec.text) CONTAINS toLower($keyword))
-      OPTIONAL MATCH (dec)-[:MADE_IN]->(pr:PullRequest)
-      OPTIONAL MATCH (dec)-[:IMPLEMENTED_BY]->(c:Commit)
-      RETURN 'decision' AS type,
-             dec.id AS id,
-             ('Architectural Decision: ' + dec.text) AS title,
-             dec.author AS author,
-             dec.date AS date,
-             coalesce(dec.sourceUrl, pr.url, c.url, '#') AS url,
-             ('Decision (' + dec.sourceType + '): ' + dec.text) AS reason,
-             1 AS rank
+    let cypher = '';
+    if (isHistorical) {
+      // Historical Query: Prioritize Commits, PRs, Decisions with rank = 1 over File nodes (rank = 10)
+      cypher = `
+        MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT]->(c:Commit)
+        OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(c)
+        RETURN 'commit' AS type,
+               c.sha AS id,
+               ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS title,
+               dev.username AS author,
+               c.date AS date,
+               c.url AS url,
+               ('Commit ' + substring(c.sha, 0, 7) + ' by @' + coalesce(dev.username, 'contributor') + ' on ' + coalesce(c.date, 'recorded date') + ': ' + c.message) AS reason,
+               1 AS rank
 
-      UNION
+        UNION
 
-      // 2. Incidents for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_ISSUE|HAS_COMMIT|HAS_PULL_REQUEST*1..2]->(parent)
-      MATCH (parent)-[:DESCRIBES|ADDRESSES|ADDRESSED_BY*1..2]-(inc:Incident)
-      WHERE ($keyword = '' OR toLower(inc.text) CONTAINS toLower($keyword))
-      OPTIONAL MATCH (i:Issue)-[:DESCRIBES]->(inc)
-      OPTIONAL MATCH (inc)-[:ADDRESSED_BY]->(c:Commit)
-      RETURN 'incident' AS type,
-             inc.id AS id,
-             ('Incident / Problem: ' + inc.text) AS title,
-             inc.author AS author,
-             inc.date AS date,
-             coalesce(inc.sourceUrl, i.url, c.url, '#') AS url,
-             ('Incident (' + inc.sourceType + '): ' + inc.text) AS reason,
-             2 AS rank
+        MATCH (r:Repository { id: $repoId })-[:HAS_PULL_REQUEST]->(pr:PullRequest)
+        OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(pr)
+        RETURN 'pull_request' AS type,
+               pr.id AS id,
+               ('PR #' + toString(pr.number) + ': ' + pr.title) AS title,
+               dev.username AS author,
+               pr.merged_at AS date,
+               pr.url AS url,
+               ('Pull Request #' + toString(pr.number) + ' merged on ' + coalesce(pr.merged_at, 'date') + ': ' + pr.title + ' - ' + substring(pr.body, 0, 180)) AS reason,
+               1 AS rank
 
-      UNION
+        UNION
 
-      // 3. Pull Requests for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_PULL_REQUEST]->(pr:PullRequest)
-      WHERE ($keyword = '' OR toLower(pr.title) CONTAINS toLower($keyword) OR toLower(pr.body) CONTAINS toLower($keyword))
-      OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(pr)
-      RETURN 'pull_request' AS type,
-             pr.id AS id,
-             ('PR #' + toString(pr.number) + ': ' + pr.title) AS title,
-             dev.username AS author,
-             pr.merged_at AS date,
-             pr.url AS url,
-             ('Pull Request #' + toString(pr.number) + ': ' + pr.title + ' - ' + substring(pr.body, 0, 180)) AS reason,
-             3 AS rank
+        MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT|HAS_PULL_REQUEST*1..2]->(parent)
+        MATCH (parent)-[:SUPPORTS|IMPLEMENTS|MADE_IN*1..2]-(dec:Decision)
+        OPTIONAL MATCH (dec)-[:MADE_IN]->(pr:PullRequest)
+        OPTIONAL MATCH (dec)-[:IMPLEMENTED_BY]->(c:Commit)
+        RETURN 'decision' AS type,
+               dec.id AS id,
+               ('Architectural Decision: ' + dec.text) AS title,
+               dec.author AS author,
+               dec.date AS date,
+               coalesce(dec.sourceUrl, pr.url, c.url, '#') AS url,
+               ('Decision (' + dec.sourceType + '): ' + dec.text) AS reason,
+               1 AS rank
 
-      UNION
+        UNION
 
-      // 4. Issues for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_ISSUE]->(i:Issue)
-      WHERE ($keyword = '' OR toLower(i.title) CONTAINS toLower($keyword) OR toLower(i.body) CONTAINS toLower($keyword))
-      OPTIONAL MATCH (dev:Developer)-[:CREATED]->(i)
-      RETURN 'issue' AS type,
-             i.id AS id,
-             ('Issue #' + toString(i.number) + ': ' + i.title) AS title,
-             dev.username AS author,
-             i.state AS date,
-             i.url AS url,
-             ('Issue #' + toString(i.number) + ' (' + i.state + '): ' + i.title + ' - ' + substring(i.body, 0, 180)) AS reason,
-             4 AS rank
+        MATCH (r:Repository { id: $repoId })-[:HAS_FILE]->(f:File)
+        WHERE (toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture')
+        RETURN 'file' AS type,
+               f.id AS id,
+               ('File: ' + f.path) AS title,
+               'Repository Source' AS author,
+               'Current Codebase' AS date,
+               f.url AS url,
+               ('Current Doc / File (' + f.path + '): ' + substring(f.content, 0, 300)) AS reason,
+               10 AS rank
+      `;
+    } else {
+      // Non-Historical (Architectural / Data Storage / Implementation / Performance): Prioritize Files & Docs
+      cypher = `
+        MATCH (r:Repository { id: $repoId })-[:HAS_FILE]->(f:File)
+        WHERE ($keyword = '' OR toLower(f.path) CONTAINS toLower($keyword) OR toLower(f.content) CONTAINS toLower($keyword) OR toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture' OR toLower(f.path) CONTAINS 'dvc' OR toLower(f.path) CONTAINS 'dataset')
+        RETURN 'file' AS type,
+               f.id AS id,
+               ('File: ' + f.path) AS title,
+               'Repository Source' AS author,
+               'Current Codebase' AS date,
+               f.url AS url,
+               ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 450)) AS reason,
+               1 AS rank
 
-      UNION
+        UNION
 
-      // 5. Commits for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT]->(c:Commit)
-      WHERE ($keyword = '' OR toLower(c.message) CONTAINS toLower($keyword))
-      OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(c)
-      RETURN 'commit' AS type,
-             c.sha AS id,
-             ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS title,
-             dev.username AS author,
-             c.date AS date,
-             c.url AS url,
-             ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS reason,
-             5 AS rank
+        MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT|HAS_PULL_REQUEST*1..2]->(parent)
+        MATCH (parent)-[:SUPPORTS|IMPLEMENTS|MADE_IN*1..2]-(dec:Decision)
+        WHERE ($keyword = '' OR toLower(dec.text) CONTAINS toLower($keyword))
+        OPTIONAL MATCH (dec)-[:MADE_IN]->(pr:PullRequest)
+        OPTIONAL MATCH (dec)-[:IMPLEMENTED_BY]->(c:Commit)
+        RETURN 'decision' AS type,
+               dec.id AS id,
+               ('Architectural Decision: ' + dec.text) AS title,
+               dec.author AS author,
+               dec.date AS date,
+               coalesce(dec.sourceUrl, pr.url, c.url, '#') AS url,
+               ('Decision (' + dec.sourceType + '): ' + dec.text) AS reason,
+               2 AS rank
 
-      UNION
+        UNION
 
-      // 6. Discussions for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_PULL_REQUEST]->(pr:PullRequest)-[:HAS_DISCUSSION]->(d:Discussion)
-      WHERE ($keyword = '' OR toLower(d.body) CONTAINS toLower($keyword))
-      RETURN 'discussion' AS type,
-             d.id AS id,
-             ('Discussion by @' + d.user) AS title,
-             d.user AS author,
-             d.date AS date,
-             coalesce(pr.url, '#') AS url,
-             ('Review Comment by @' + d.user + ': ' + substring(d.body, 0, 200)) AS reason,
-             6 AS rank
+        MATCH (r:Repository { id: $repoId })-[:HAS_PULL_REQUEST]->(pr:PullRequest)
+        WHERE ($keyword = '' OR toLower(pr.title) CONTAINS toLower($keyword) OR toLower(pr.body) CONTAINS toLower($keyword))
+        OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(pr)
+        RETURN 'pull_request' AS type,
+               pr.id AS id,
+               ('PR #' + toString(pr.number) + ': ' + pr.title) AS title,
+               dev.username AS author,
+               pr.merged_at AS date,
+               pr.url AS url,
+               ('Pull Request #' + toString(pr.number) + ': ' + pr.title + ' - ' + substring(pr.body, 0, 180)) AS reason,
+               3 AS rank
 
-      UNION
+        UNION
 
-      // 7. Source Files & Documentation for repoId
-      MATCH (r:Repository { id: $repoId })-[:HAS_FILE]->(f:File)
-      WHERE ($keyword = '' OR toLower(f.path) CONTAINS toLower($keyword) OR toLower(f.content) CONTAINS toLower($keyword) OR toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture' OR toLower(f.path) CONTAINS 'dvc' OR toLower(f.path) CONTAINS 'dataset')
-      RETURN 'file' AS type,
-             f.id AS id,
-             ('File: ' + f.path) AS title,
-             'Repository Source' AS author,
-             'Current Codebase' AS date,
-             f.url AS url,
-             ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 450)) AS reason,
-             1 AS rank
-    `;
+        MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT]->(c:Commit)
+        WHERE ($keyword = '' OR toLower(c.message) CONTAINS toLower($keyword))
+        OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(c)
+        RETURN 'commit' AS type,
+               c.sha AS id,
+               ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS title,
+               dev.username AS author,
+               c.date AS date,
+               c.url AS url,
+               ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS reason,
+               4 AS rank
+      `;
+    }
 
     const result = await session.executeRead((tx) => tx.run(cypher, { repoId, keyword }));
 
