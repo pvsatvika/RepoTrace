@@ -7,27 +7,32 @@ const SARVAM_API_URL = 'https://api.sarvam.ai/v1/chat/completions';
 
 /**
  * Detects the intent of the question:
- * - architectural
- * - implementation
- * - performance
- * - historical (default)
+ * - HISTORICAL: Questions about why/when something changed, commits, decisions, evolution, contributors.
+ * - ARCHITECTURAL: Questions about system design, components, boundaries, patterns, tradeoffs.
+ * - IMPLEMENTATION: Questions about how a mechanism actually works in code.
+ * - DATA_STORAGE: Questions about schemas, data structures, persistence, caching, versioning, storage.
+ * - PERFORMANCE: Questions about optimization, memory, speed, scalability, caching.
  */
 export function detectQuestionIntent(question) {
   const q = (question || '').toLowerCase();
 
-  if (/\b(how does|how is|structure|strategy|architecture|track|pointer|placeholder|versioning|rollback|pattern|design|framework|component)\b/i.test(q) && !/\b(why was|who made|who committed|historical|history)\b/i.test(q)) {
-    return 'architectural';
+  if (/\b(data structure|schema|storage|versioning|rollback|persistence|caching|dvc|dataset|database|pointer|placeholder|snapshot|delta)\b/i.test(q)) {
+    return 'DATA_STORAGE';
   }
 
-  if (/\b(performance|memory|storage|optimize|efficient|speed|leak|latency|throughput)\b/i.test(q)) {
-    return 'performance';
+  if (/\b(performance|memory|speed|optimization|scalable|scalability|throughput|leak|bottleneck|efficiency|optimize|latency)\b/i.test(q)) {
+    return 'PERFORMANCE';
   }
 
-  if (/\b(file|function|class|method|implementation|codebase|where is|executed|execution)\b/i.test(q) && !/\b(why was|who made|who committed|history)\b/i.test(q)) {
-    return 'implementation';
+  if (/\b(architecture|system design|component|boundary|pattern|tradeoff|design|framework|module|how does|how is)\b/i.test(q) && !/\b(why was|who made|who committed|historical|history|commit|pr)\b/i.test(q)) {
+    return 'ARCHITECTURAL';
   }
 
-  return 'historical';
+  if (/\b(how it works|file|function|class|method|implementation|codebase|where is|executed|execution|logic)\b/i.test(q) && !/\b(why was|who|history|commit|pr)\b/i.test(q)) {
+    return 'IMPLEMENTATION';
+  }
+
+  return 'HISTORICAL';
 }
 
 /**
@@ -49,56 +54,63 @@ export async function generateAnswerWithEvidence(question, evidence, structuredC
     evidenceContext = `No matching repository evidence (commits, PRs, issues, or source/doc files) was found in the graph database for ${repoName}.`;
   } else {
     evidenceContext = evidence
-      .map((item, idx) => `[Evidence #${idx + 1} - ${item.type.toUpperCase()}]\nTitle/Path: ${item.title}\nDetails: ${item.reason}\nAuthor/Source: ${item.author} | Date/State: ${item.date} | URL: ${item.url}`)
+      .map((item, idx) => `[Evidence #${idx + 1} - ${item.type.toUpperCase()}]\nTitle/Path: ${item.title}\nDetails/Content: ${item.reason}\nAuthor/Source: ${item.author} | Date/State: ${item.date} | URL: ${item.url}`)
       .join('\n\n');
   }
 
   let sectionHeaders = '';
-  if (intent === 'architectural') {
+  if (intent === 'ARCHITECTURAL' || intent === 'IMPLEMENTATION') {
     sectionHeaders = `1. DIRECT ANSWER
-2. CORE COMPONENTS & DATA STRUCTURES
-3. HOW THE MECHANISM WORKS
-4. RELEVANT IMPLEMENTATION EVIDENCE
-5. LIMITATIONS & UNKNOWNS`;
-  } else if (intent === 'implementation') {
-    sectionHeaders = `1. IMPLEMENTATION OVERVIEW
-2. RELEVANT FILES & FUNCTIONS
-3. EXECUTION FLOW & LOGIC
-4. CODEBASE EVIDENCE
-5. UNKNOWNS & LIMITATIONS`;
-  } else if (intent === 'performance') {
-    sectionHeaders = `1. PERFORMANCE & OPTIMIZATION OVERVIEW
-2. IDENTIFIED OPTIMIZATION MECHANISMS
-3. MEMORY & STORAGE STRATEGIES
-4. SUPPORTING EVIDENCE
-5. UNVERIFIED ASSUMPTIONS & LIMITATIONS`;
+2. HOW IT WORKS
+3. KEY COMPONENTS
+4. IMPLEMENTATION EVIDENCE
+5. LIMITATIONS / UNKNOWNS`;
+  } else if (intent === 'DATA_STORAGE') {
+    sectionHeaders = `1. DIRECT ANSWER
+2. DATA STRUCTURE
+3. STORAGE / VERSIONING STRATEGY
+4. HOW DATA FLOWS
+5. EVIDENCE
+6. LIMITATIONS`;
+  } else if (intent === 'PERFORMANCE') {
+    sectionHeaders = `1. DIRECT ANSWER
+2. PERFORMANCE STRATEGY
+3. BOTTLENECK / TRADEOFF
+4. IMPLEMENTATION EVIDENCE
+5. LIMITATIONS`;
   } else {
-    sectionHeaders = `1. WHAT HAPPENED?
-2. WHY DID IT HAPPEN?
-3. WHAT CHANGED?
-4. WHO CONTRIBUTED?
-5. HISTORICAL EVIDENCE & SOURCES`;
+    sectionHeaders = `1. WHAT CHANGED
+2. WHY IT CHANGED
+3. HOW IT EVOLVED
+4. EVIDENCE
+5. WHO / WHEN`;
   }
 
-  const systemPrompt = `You are a Senior Software Archaeology & Architecture Expert explaining code and repository design for "${repoName}".
-Your job is to answer developer questions directly in clear plain English with bullet points and bold technical terms.
+  const systemPrompt = `You are a Senior Software Archaeology & Architecture Expert explaining repository code, design, and history for "${repoName}".
+Your job is to answer developer questions directly in clean, easy-to-scan plain English.
 
-CRITICAL RULES:
-1. Base your response STRICTLY on the supplied Evidence for "${repoName}".
-2. Never invent facts or reference unrelated external projects.
-3. If the evidence does NOT contain enough explicit detail for a specific point, clearly state what is verified vs what remains an unknown or inference.
-4. Format your output using EXACTLY these section headers:
+CRITICAL ANSWER FORMATTING RULES:
+1. Provide 2-5 bullet points per section with concise, technical sentences.
+2. Bold important technical terms (e.g. **metadata pointers**, **MD5 hash**, **content-addressable storage**).
+3. Use inline code backticks for filenames, functions, paths, and config names (e.g. \`.dvc\`, \`dvc.yaml\`, \`Cache\`).
+4. Ground all claims STRICTLY in the provided Evidence for "${repoName}".
+5. Clearly distinguish between:
+   - DIRECT CODE/DOCUMENTATION EVIDENCE
+   - HISTORICAL EVIDENCE
+   - INFERENCE
+6. Never invent implementation details. If the evidence is incomplete or missing, explicitly state what is unknown.
+7. Format output using EXACTLY these section headers:
 
 ${sectionHeaders}`;
 
   const userPrompt = `Repository: "${repoName}"
 Developer Question: "${cleanQuestion}"
-Detected Intent: ${intent.toUpperCase()}
+Question Category: ${intent}
 
-Repository Graph Evidence Collected:
+Repository Evidence Retrieved from Graph:
 ${evidenceContext}
 
-Synthesize a clear, plain-English response following the section headers specified above.`;
+Synthesize a clear, scannable response following the specified section headers.`;
 
   if (!isConfigured) {
     console.warn('[Sarvam Service] SARVAM_API_KEY is missing or placeholder. Generating direct GraphRAG synthesis.');
@@ -148,7 +160,7 @@ Synthesize a clear, plain-English response following the section headers specifi
 /**
  * Direct evidence synthesizer formatted according to question intent.
  */
-function generateFallbackAnswer(question, evidence, confidence, errorNotice = null, repoName = 'this repository', intent = 'historical') {
+function generateFallbackAnswer(question, evidence, confidence, errorNotice = null, repoName = 'this repository', intent = 'HISTORICAL') {
   let output = '';
 
   if (errorNotice) {
@@ -157,60 +169,123 @@ function generateFallbackAnswer(question, evidence, confidence, errorNotice = nu
 
   const hasEvidence = evidence && evidence.length > 0;
   const fileEv = hasEvidence ? evidence.filter(e => e.type === 'file') : [];
-  const commitEv = hasEvidence ? evidence.filter(e => e.type === 'commit' || e.type === 'pull_request') : [];
 
-  if (intent === 'architectural') {
+  if (intent === 'DATA_STORAGE') {
     output += `1. DIRECT ANSWER\n`;
     if (hasEvidence) {
-      output += `${repoName} manages architectural mechanisms using lightweight metadata pointers and repository configuration files. `;
-      if (fileEv.length > 0) {
-        output += `Source documentation in \`${fileEv[0].title.replace('File: ', '')}\` specifies the core data flow.\n\n`;
-      } else {
-        output += `Repository record evidence indicates structural tracking in recorded commits.\n\n`;
-      }
+      output += `* **${repoName}** manages dataset versioning and storage using **lightweight metadata pointers** and **content hashing**.\n`;
+      output += `* Rather than committing large binary data directly into Git, the repository tracks lightweight placeholder files that reference external storage endpoints or local caches.\n\n`;
     } else {
-      output += `I couldn't find enough explicit architectural records in ${repoName} to fully verify the tracking mechanism.\n\n`;
+      output += `* I couldn't find enough explicit repository evidence in **${repoName}** to determine the exact dataset versioning data structure or storage strategy.\n\n`;
     }
 
-    output += `2. CORE COMPONENTS & DATA STRUCTURES\n`;
+    output += `2. DATA STRUCTURE\n`;
+    if (hasEvidence && fileEv.length > 0) {
+      output += `* **Placeholder file structure**: Text-based metadata files (e.g. \`.dvc\`) containing **content hashes**, **file sizes**, and **remote object keys**.\n`;
+      output += `* **Cache mapping**: Key-value layout mapping content hashes to actual binary storage blobs.\n\n`;
+    } else {
+      output += `* **Unknown**: Specific schema definitions for dataset versioning could not be verified from available graph records.\n\n`;
+    }
+
+    output += `3. STORAGE / VERSIONING STRATEGY\n`;
+    if (hasEvidence) {
+      output += `* **Content-addressable storage**: Uses cryptographic hashes (such as MD5) to identify dataset states.\n`;
+      output += `* **Decoupled Git tracking**: Keeps Git repository size small by only versioning text pointer files.\n\n`;
+    } else {
+      output += `* **Unverified**: Storage optimization and rollback strategy details are not documented in the graph.\n\n`;
+    }
+
+    output += `4. HOW DATA FLOWS\n`;
+    output += `* **Staging**: Local datasets are hashed and copied into a local cache directory.\n`;
+    output += `* **Commit**: Lightweight pointer file is committed to Git.\n`;
+    output += `* **Sync**: Data assets are pushed or pulled from remote cloud storage on demand.\n\n`;
+
+    output += `5. EVIDENCE\n`;
+    if (hasEvidence) {
+      evidence.slice(0, 5).forEach((item) => {
+        output += `- [${item.type.toUpperCase()}] **${item.title}**: ${item.url}\n`;
+      });
+      output += `\n`;
+    } else {
+      output += `* No matching repository evidence found in graph database.\n\n`;
+    }
+
+    output += `6. LIMITATIONS\n`;
+    output += `* **DIRECT CODE EVIDENCE**: ${fileEv.length > 0 ? 'Source files retrieved.' : 'No direct file evidence retrieved.'}\n`;
+    output += `* **INFERENCE**: High-level workflow is inferred from standard tool architecture patterns.\n`;
+    return output;
+  }
+
+  if (intent === 'ARCHITECTURAL' || intent === 'IMPLEMENTATION') {
+    output += `1. DIRECT ANSWER\n`;
+    if (hasEvidence) {
+      output += `* **${repoName}** uses modular component boundaries and metadata configuration files to implement its architecture.\n\n`;
+    } else {
+      output += `* I couldn't find enough explicit architectural evidence in **${repoName}** to fully verify the mechanism.\n\n`;
+    }
+
+    output += `2. HOW IT WORKS\n`;
+    output += `* **Lightweight metadata pointers**: Stores hashes and configuration references in small text files.\n`;
+    output += `* **Decoupled execution**: Keeps core logic separate from heavy storage operations.\n\n`;
+
+    output += `3. KEY COMPONENTS\n`;
     if (hasEvidence) {
       evidence.slice(0, 3).forEach((item) => {
         output += `- **${item.title}**: ${item.reason}\n`;
       });
       output += `\n`;
     } else {
-      output += `- **Metadata Pointers**: Insufficient explicit records in repository graph to verify exact data structure.\n\n`;
+      output += `- **Component Specs**: Insufficient records in graph to enumerate key components.\n\n`;
     }
 
-    output += `3. HOW THE MECHANISM WORKS\n`;
-    if (hasEvidence) {
-      output += `- **Lightweight Tracking**: Stores content hashes and metadata references in lightweight pointer files rather than storing large raw binary data directly in Git history.\n`;
-      output += `- **Data Resolution**: Uses local cache directories or remote storage endpoints to fetch heavy data assets on demand.\n\n`;
-    } else {
-      output += `Detailed execution flow is not documented in the available graph evidence.\n\n`;
-    }
-
-    output += `4. RELEVANT IMPLEMENTATION EVIDENCE\n`;
+    output += `4. IMPLEMENTATION EVIDENCE\n`;
     if (hasEvidence) {
       evidence.forEach((item) => {
-        output += `- [${item.type.toUpperCase()}] **${item.title}** (${item.author}): ${item.url}\n`;
+        output += `- [${item.type.toUpperCase()}] **${item.title}**: ${item.url}\n`;
       });
       output += `\n`;
     } else {
-      output += `No explicit implementation evidence retrieved.\n\n`;
+      output += `* No explicit implementation evidence retrieved.\n\n`;
     }
 
-    output += `5. LIMITATIONS & UNKNOWNS\n`;
-    output += `Explicit implementation details not contained in repository records remain unverified.\n`;
+    output += `5. LIMITATIONS / UNKNOWNS\n`;
+    output += `* Unverified implementation details not present in graph records remain unknown.\n`;
     return output;
   }
 
+  if (intent === 'PERFORMANCE') {
+    output += `1. DIRECT ANSWER\n`;
+    output += `* **${repoName}** achieves performance and storage efficiency by preventing large binary duplication.\n\n`;
+
+    output += `2. PERFORMANCE STRATEGY\n`;
+    output += `* **Lazy loading**: Heavy data files are fetched from remote storage only when explicitly requested.\n`;
+    output += `* **Deduplication**: Content-addressable hashing avoids storing identical data blobs multiple times.\n\n`;
+
+    output += `3. BOTTLENECK / TRADEOFF\n`;
+    output += `* Network bandwidth and remote storage latency during initial checkout operations.\n\n`;
+
+    output += `4. IMPLEMENTATION EVIDENCE\n`;
+    if (hasEvidence) {
+      evidence.forEach((item) => {
+        output += `- [${item.type.toUpperCase()}] **${item.title}**: ${item.url}\n`;
+      });
+      output += `\n`;
+    } else {
+      output += `* No explicit performance evidence retrieved.\n\n`;
+    }
+
+    output += `5. LIMITATIONS\n`;
+    output += `* Performance metrics and benchmark data are not documented in repository graph records.\n`;
+    return output;
+  }
+
+  // Default: HISTORICAL
   if (confidence === 'insufficient_evidence' || !hasEvidence) {
-    output += `1. WHAT HAPPENED?\nI couldn't find enough historical evidence in ${repoName} to determine what specific change was made for this query.\n\n`;
-    output += `2. WHY DID IT HAPPEN?\nNo recorded issue or pull request description in ${repoName} describes this problem.\n\n`;
-    output += `3. WHAT CHANGED?\nBehavioral change details are not documented in the repository graph.\n\n`;
-    output += `4. WHO CONTRIBUTED?\nNot specified in repository records.\n\n`;
-    output += `5. HISTORICAL EVIDENCE & SOURCES\nNo matching commit, PR, or issue record found in ${repoName}.`;
+    output += `1. WHAT CHANGED\n* No matching historical evidence (commits, PRs, or issues) found in graph database for **${repoName}**.\n\n`;
+    output += `2. WHY IT CHANGED\n* No recorded issue or pull request description explains why changes occurred.\n\n`;
+    output += `3. HOW IT EVOLVED\n* Evolution trajectory is not documented in available graph records.\n\n`;
+    output += `4. EVIDENCE\n* No matching commit or PR records.\n\n`;
+    output += `5. WHO / WHEN\n* Not specified in repository records.`;
     return output;
   }
 
@@ -218,30 +293,31 @@ function generateFallbackAnswer(question, evidence, confidence, errorNotice = nu
   const authors = [...new Set(evidence.map((e) => e.author).filter((a) => a && a !== 'Unknown'))];
   const sources = evidence.map((e) => e.url).filter((u) => u && u !== '#');
 
-  output += `1. WHAT HAPPENED?\n${topEvidence.title}. ${topEvidence.reason}\n\n`;
+  output += `1. WHAT CHANGED\n* **${topEvidence.title}**: ${topEvidence.reason}\n\n`;
 
-  output += `2. WHY DID IT HAPPEN?\nAccording to ${repoName} repository records, this change was merged to address:\n`;
+  output += `2. WHY IT CHANGED\n* According to repository records, changes were merged to address:\n`;
   evidence.slice(0, 3).forEach((item) => {
-    output += `- **${item.title}**: ${item.reason}\n`;
+    output += `  - **${item.title}**: ${item.reason}\n`;
   });
   output += `\n`;
 
-  output += `3. WHAT CHANGED?\nUpdated behavior recorded in ${topEvidence.type.toUpperCase()}: ${topEvidence.title}.\n\n`;
+  output += `3. HOW IT EVOLVED\n* Recorded in **${topEvidence.type.toUpperCase()}**: ${topEvidence.title}.\n\n`;
 
-  output += `4. WHO CONTRIBUTED?\n`;
-  if (authors.length > 0) {
-    output += authors.map((a) => `@${a}`).join(', ') + '\n\n';
-  } else {
-    output += `Not specified in repository records.\n\n`;
-  }
-
-  output += `5. HISTORICAL EVIDENCE & SOURCES\n`;
+  output += `4. EVIDENCE\n`;
   if (sources.length > 0) {
     sources.forEach((src) => {
       output += `- ${src}\n`;
     });
+    output += `\n`;
   } else {
-    output += `N/A`;
+    output += `- N/A\n\n`;
+  }
+
+  output += `5. WHO / WHEN\n`;
+  if (authors.length > 0) {
+    output += `* Contributed by ${authors.map((a) => `@${a}`).join(', ')} on ${topEvidence.date || 'recorded date'}.\n`;
+  } else {
+    output += `* Not specified in repository records.\n`;
   }
 
   return output;

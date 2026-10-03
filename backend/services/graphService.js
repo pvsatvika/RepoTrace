@@ -670,14 +670,14 @@ export async function querySubgraph(question, repository = null) {
 
       // 7. Source Files & Documentation for repoId
       MATCH (r:Repository { id: $repoId })-[:HAS_FILE]->(f:File)
-      WHERE ($keyword = '' OR toLower(f.path) CONTAINS toLower($keyword) OR toLower(f.content) CONTAINS toLower($keyword) OR toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture')
+      WHERE ($keyword = '' OR toLower(f.path) CONTAINS toLower($keyword) OR toLower(f.content) CONTAINS toLower($keyword) OR toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture' OR toLower(f.path) CONTAINS 'dvc' OR toLower(f.path) CONTAINS 'dataset')
       RETURN 'file' AS type,
              f.id AS id,
              ('File: ' + f.path) AS title,
              'Repository Source' AS author,
              'Current Codebase' AS date,
              f.url AS url,
-             ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 350)) AS reason,
+             ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 450)) AS reason,
              1 AS rank
     `;
 
@@ -694,33 +694,40 @@ export async function querySubgraph(question, repository = null) {
       rank: Number(safeValue(record.get('rank'), 99)) || 99,
     }));
 
-    // If keyword search yielded 0 items, run fallback repository-scoped query to get repo's commits, PRs, issues
+    // If keyword search yielded 0 items, run fallback repository-scoped query to get repo's files & commits
     if (rawEvidence.length === 0 && repoId) {
       console.log(`[Neo4j Service] No keyword match for "${keyword}". Executing fallback query for repo "${repoId}"...`);
       const fallbackCypher = `
-        MATCH (r:Repository { id: $repoId })-[:HAS_COMMIT]->(c:Commit)
+        MATCH (r:Repository { id: $repoId })
+        OPTIONAL MATCH (r)-[:HAS_FILE]->(f:File)
+        OPTIONAL MATCH (r)-[:HAS_COMMIT]->(c:Commit)
         OPTIONAL MATCH (dev:Developer)-[:AUTHORED]->(c)
-        RETURN 'commit' AS type,
-               c.sha AS id,
-               ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS title,
-               dev.username AS author,
-               c.date AS date,
-               c.url AS url,
-               ('Commit ' + substring(c.sha, 0, 7) + ': ' + c.message) AS reason,
-               5 AS rank
+        RETURN 'file' AS type,
+               f.id AS id,
+               ('File: ' + f.path) AS title,
+               'Repository Source' AS author,
+               'Current Codebase' AS date,
+               f.url AS url,
+               ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 400)) AS reason,
+               1 AS rank
         LIMIT 10
       `;
       const fallbackRes = await session.executeRead((tx) => tx.run(fallbackCypher, { repoId }));
-      rawEvidence = fallbackRes.records.map((record) => ({
-        type: safeValue(record.get('type'), 'evidence'),
-        id: safeValue(record.get('id'), 'N/A'),
-        title: safeValue(record.get('title'), 'Historical Evidence'),
-        author: safeValue(record.get('author'), 'Unknown'),
-        date: safeValue(record.get('date'), 'N/A'),
-        url: safeValue(record.get('url'), '#'),
-        reason: safeValue(record.get('reason'), ''),
-        rank: Number(safeValue(record.get('rank'), 99)) || 99,
-      }));
+      const fallbackRecords = fallbackRes.records
+        .filter(rec => rec.get('id') !== null)
+        .map((record) => ({
+          type: safeValue(record.get('type'), 'evidence'),
+          id: safeValue(record.get('id'), 'N/A'),
+          title: safeValue(record.get('title'), 'Repository File'),
+          author: safeValue(record.get('author'), 'Repository Source'),
+          date: safeValue(record.get('date'), 'Current Codebase'),
+          url: safeValue(record.get('url'), '#'),
+          reason: safeValue(record.get('reason'), ''),
+          rank: Number(safeValue(record.get('rank'), 99)) || 99,
+        }));
+      if (fallbackRecords.length > 0) {
+        rawEvidence = fallbackRecords;
+      }
     }
 
     // FAILSAFE GUARANTEE: Filter strictly to repoId

@@ -17,8 +17,7 @@ function getOctokitClient() {
 }
 
 /**
- * Fetches repository history: metadata, commits (with changed files),
- * closed PRs (with PR commits, issue comments, and code review comments), and issues.
+ * Fetches repository history: metadata, commits, PRs, issues, and targeted source/doc files.
  * 
  * @param {string} owner - Repository owner
  * @param {string} repo - Repository name
@@ -34,7 +33,7 @@ export async function fetchRepoData(owner, repo) {
   const octokit = getOctokitClient();
 
   try {
-    console.log(`[GitHub Service] Deep-fetching history for ${owner}/${repo}...`);
+    console.log(`[GitHub Service] Deep-fetching history and targeted repository files for ${owner}/${repo}...`);
 
     // 1. Primary Parallel Fetch: Repo info, Commits, PRs, Issues
     const [repoRes, commitsRes, prsRes, issuesRes] = await Promise.allSettled([
@@ -115,7 +114,7 @@ export async function fetchRepoData(owner, repo) {
       })
     );
 
-    // 3. Fetch PR Commits & Comments for Reliable PR ↔ Commit & File Linking
+    // 3. Fetch PR Commits & Comments
     const pullRequests = await Promise.all(
       prListRaw.map(async (pr) => {
         try {
@@ -185,19 +184,40 @@ export async function fetchRepoData(owner, repo) {
       url: issue.html_url,
     }));
 
-    // 5. Fetch Key Source Files & Documentation
-    const candidatePaths = ['README.md', 'README.rst', 'ARCHITECTURE.md', 'docs/index.md'];
+    // 5. Targeted Fetching of Repository Content & Documentation
+    const candidatePaths = ['README.md', 'README.rst', 'ARCHITECTURE.md', 'DESIGN.md', 'CONTRIBUTING.md', 'dvc.yaml', 'pyproject.toml'];
+    const skipExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.zip', '.tar', '.gz', '.pyc', '.exe', '.so', '.dll', '.lock'];
+    const skipNames = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'Cargo.lock', '.DS_Store'];
+
     try {
       const { data: rootContent } = await octokit.rest.repos.getContent({ owner, repo, path: '' });
       if (Array.isArray(rootContent)) {
-        rootContent.forEach(item => {
+        for (const item of rootContent) {
           if (item.type === 'file' && !candidatePaths.includes(item.path)) {
             const lower = item.name.toLowerCase();
-            if (lower.endsWith('.md') || lower.endsWith('.py') || lower.endsWith('.ts') || lower.endsWith('.js') || lower.endsWith('.yaml') || lower.endsWith('.yml') || lower.includes('dvc') || lower.includes('config')) {
-              if (candidatePaths.length < 12) candidatePaths.push(item.path);
+            const isSkipped = skipNames.includes(lower) || skipExtensions.some(ext => lower.endsWith(ext));
+            if (!isSkipped && (lower.endsWith('.md') || lower.endsWith('.py') || lower.endsWith('.ts') || lower.endsWith('.js') || lower.endsWith('.yaml') || lower.endsWith('.yml') || lower.endsWith('.json') || lower.endsWith('.toml') || lower.includes('dvc') || lower.includes('dataset') || lower.includes('version'))) {
+              if (candidatePaths.length < 18) candidatePaths.push(item.path);
+            }
+          } else if (item.type === 'dir' && ['docs', 'src', 'dvc', 'models', 'lib', 'core'].includes(item.name.toLowerCase())) {
+            try {
+              const { data: dirContent } = await octokit.rest.repos.getContent({ owner, repo, path: item.path });
+              if (Array.isArray(dirContent)) {
+                dirContent.forEach(subItem => {
+                  if (subItem.type === 'file' && !candidatePaths.includes(subItem.path)) {
+                    const subLower = subItem.name.toLowerCase();
+                    const subSkipped = skipNames.includes(subLower) || skipExtensions.some(ext => subLower.endsWith(ext));
+                    if (!subSkipped && (subLower.endsWith('.md') || subLower.endsWith('.py') || subLower.endsWith('.ts') || subLower.endsWith('.js') || subLower.endsWith('.yaml') || subLower.includes('dvc') || subLower.includes('dataset') || subLower.includes('version'))) {
+                      if (candidatePaths.length < 25) candidatePaths.push(subItem.path);
+                    }
+                  }
+                });
+              }
+            } catch (dirErr) {
+              console.warn(`[GitHub Service] Subdir scan skipped for ${item.path}: ${dirErr.message}`);
             }
           }
-        });
+        }
       }
     } catch (e) {
       console.warn(`[GitHub Service] Root directory listing skipped: ${e.message}`);
@@ -211,7 +231,8 @@ export async function fetchRepoData(owner, repo) {
             const rawContent = Buffer.from(res.data.content, 'base64').toString('utf-8');
             return {
               path: filePath,
-              content: rawContent.substring(0, 4000),
+              filename: filePath.split('/').pop(),
+              content: rawContent.substring(0, 5000),
               url: res.data.html_url || `https://github.com/${owner}/${repo}/blob/main/${filePath}`,
             };
           }
