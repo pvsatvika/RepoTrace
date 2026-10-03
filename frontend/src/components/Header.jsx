@@ -99,7 +99,7 @@ export default function Header({
           >
             {/* SUN ICON (LEFT) */}
             <span className={`flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${
-              theme === 'light' ? 'text-amber-500 bg-white shadow-xs font-bold scale-110' : 'text-theme-muted'
+              theme === 'light' ? 'text-[var(--accent-blue)] bg-white shadow-xs font-bold scale-110' : 'text-theme-muted'
             }`}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
@@ -116,7 +116,7 @@ export default function Header({
 
             {/* MOON ICON (RIGHT) */}
             <span className={`ml-auto flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200 ${
-              theme === 'dark' ? 'text-indigo-400 bg-[#121e36] shadow-xs font-bold scale-110' : 'text-theme-muted'
+              theme === 'dark' ? 'text-[var(--accent-blue)] bg-theme-card-hover shadow-xs font-bold scale-110' : 'text-theme-muted'
             }`}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />

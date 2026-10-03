@@ -82,14 +82,14 @@ export default function RepositoryInput({
               onChange={(e) => setRepository(e.target.value)}
               placeholder="Enter a GitHub repository URL"
               disabled={ingestLoading || backendUnavailable}
-              className="w-full bg-transparent py-3 text-sm sm:text-base font-sans text-theme-primary placeholder:text-theme-muted focus:outline-none transition-all duration-200 disabled:opacity-50"
+              className="w-full bg-transparent py-3 text-sm sm:text-base font-sans text-theme-primary placeholder:text-[var(--placeholder-color)] focus:outline-none transition-all duration-200 disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
             disabled={ingestLoading || !repository.trim() || backendUnavailable}
-            className="gradient-accent-bg gradient-accent-bg-hover text-white font-sans text-sm font-bold px-6 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-theme-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
+            className="bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-sans text-sm font-bold px-6 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-theme-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
           >
             <span>{ingestLoading ? 'Analyzing...' : 'Analyze Repository'}</span>
             <span className="text-base">→</span>
@@ -117,7 +117,7 @@ export default function RepositoryInput({
                     isCompleted
                       ? 'bg-[var(--badge-bg)] border-[var(--accent-blue)] text-[var(--accent-blue)] font-bold'
                       : isActive
-                      ? 'gradient-accent-bg text-white font-bold animate-pulse'
+                      ? 'bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-bold animate-pulse'
                       : 'bg-theme-main border-theme text-theme-muted'
                   }`}
                 >

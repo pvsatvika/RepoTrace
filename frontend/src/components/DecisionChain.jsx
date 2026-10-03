@@ -41,18 +41,18 @@ export default function DecisionChain({ question, evidence = [], selectedType = 
                 onClick={() => onSelectType && onSelectType(node.key)}
                 className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? 'gradient-accent-bg text-white border-transparent shadow-theme-sm -translate-y-0.5 font-bold'
+                    ? 'bg-[var(--accent-blue)] text-[var(--accent-foreground)] border-transparent shadow-theme-sm -translate-y-0.5 font-bold'
                     : hasData
                     ? 'bg-theme-card text-theme-secondary border-theme hover:text-theme-primary hover:border-[var(--accent-blue)]'
                     : 'bg-theme-card/50 text-theme-muted border-theme/50'
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span className={isSelected ? 'text-white' : 'text-theme-muted'}>
+                  <span className={isSelected ? 'text-[var(--accent-foreground)]' : 'text-theme-muted'}>
                     0{idx + 1}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-theme-input text-theme-muted'
+                    isSelected ? 'bg-[var(--accent-foreground)]/10 text-[var(--accent-foreground)]' : 'bg-theme-input text-theme-muted'
                   }`}>
                     {node.count}
                   </span>
@@ -63,7 +63,7 @@ export default function DecisionChain({ question, evidence = [], selectedType = 
                 </div>
 
                 <div className={`text-[11px] font-sans truncate mt-0.5 ${
-                  isSelected ? 'text-white/90' : 'text-theme-muted'
+                  isSelected ? 'text-[var(--accent-foreground)]/90' : 'text-theme-muted'
                 }`}>
                   {node.desc}
                 </div>

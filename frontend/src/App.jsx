@@ -316,7 +316,7 @@ export default function App() {
                   <div className="flex items-center gap-3 text-theme-muted pl-4">
                     <span className="w-4 text-right text-theme-muted/50 select-none">5</span>
                     <span className="text-[var(--accent-purple)]">return</span>
-                    <span className="text-emerald-500 font-semibold">explanation;</span>
+                    <span className="text-[var(--accent-blue)] font-semibold">explanation;</span>
                   </div>
 
                   <div className="flex items-center gap-3 text-theme-muted">
@@ -326,7 +326,7 @@ export default function App() {
                 </div>
 
                 {/* OVERLAPPING FLOATING CODE BADGE */}
-                <div className="absolute -bottom-4 -right-4 gradient-accent-bg text-white font-mono font-bold text-base px-4 py-2.5 rounded-xl shadow-theme-md border border-white/20 flex items-center gap-2">
+                <div className="absolute -bottom-4 -right-4 bg-[var(--icon-bg)] text-[var(--accent-foreground)] font-mono font-bold text-base px-4 py-2.5 rounded-xl shadow-theme-md border border-[var(--accent-foreground)]/20 flex items-center gap-2">
                   <span>&lt;/&gt;</span>
                 </div>
 
@@ -493,7 +493,7 @@ export default function App() {
 
                   <button
                     onClick={() => navigateToSection('ask-why')}
-                    className="gradient-accent-bg text-white font-mono text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-theme-sm hover:-translate-y-0.5"
+                    className="bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-mono text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-theme-sm hover:-translate-y-0.5"
                   >
                     QUERY REPOSITORY HISTORY →
                   </button>
@@ -557,7 +557,7 @@ export default function App() {
           {/* SECTION HEADER */}
           <div className="space-y-1.5">
             <div className="text-xs font-mono font-bold text-[var(--accent-blue)] uppercase tracking-wider flex items-center gap-2">
-              <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="w-4 h-4 text-[var(--accent-blue)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 18h6m-5 3h4m-7-6a7 7 0 1 1 12 0c0 2.5-1.5 4-3 5.5s-2 2.5-2 4.5H10c0-2-.5-3-2-4.5S6 14.5 6 12a7 7 0 0 1 3-6" />
               </svg>
               How RepoTrace Works
@@ -594,7 +594,7 @@ export default function App() {
                 className="p-6 rounded-2xl bg-theme-card border border-theme flex items-center gap-4 relative group hover:border-[var(--accent-blue)] transition-all duration-200 shadow-theme-sm"
               >
                 {/* NUMBERED CIRCLE */}
-                <div className="w-10 h-10 rounded-full gradient-accent-bg text-white font-mono font-bold flex items-center justify-center text-sm shrink-0 shadow-theme-sm">
+                <div className="w-10 h-10 rounded-full bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-mono font-bold flex items-center justify-center text-sm shrink-0 shadow-theme-sm">
                   {step.num}
                 </div>
 
@@ -661,7 +661,7 @@ export default function App() {
             <div className="pt-3">
               <button
                 onClick={() => setContactModalOpen(false)}
-                className="w-full gradient-accent-bg text-white font-sans text-xs font-bold py-2.5 rounded-xl cursor-pointer"
+                className="w-full bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-sans text-xs font-bold py-2.5 rounded-xl cursor-pointer"
               >
                 Close
               </button>

@@ -2,43 +2,53 @@
 
 :root {
   /* LIGHT THEME TOKENS (EDITORIAL MINIMALIST) */
-  --bg-main: #fafbfd;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
-  --bg-input: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --border-hover: #cbd5e1;
-  --accent-blue: #2563eb;
-  --accent-purple: #6366f1;
-  --badge-bg: #eff6ff;
-  --badge-border: #dbeafe;
-  --header-bg: rgba(250, 251, 253, 0.88);
-  --focus-ring: rgba(37, 99, 235, 0.35);
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 10px 30px -4px rgba(15, 23, 42, 0.08);
+  --bg-main: #F7F6F2;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #EEF0EF;
+  --icon-bg: #D5DBDC;
+  --bg-input: #FFFFFF;
+  --text-primary: #17202A;
+  --text-secondary: #4F5B60;
+  --text-muted: #8F9DA1;
+  --placeholder-color: #6B7280;
+  --border-color: #D5DBDC;
+  --border-hover: #D8B477;
+  --accent-blue: #D8B477;
+  --accent-purple: #D8B477;
+  --accent-foreground: #17202A;
+  --brand-blue: #8F9DA1;
+  --brand-purple: #8F9DA1;
+  --badge-bg: #F2E6D1;
+  --badge-border: #D5DBDC;
+  --header-bg: rgba(247, 246, 242, 0.88);
+  --focus-ring: rgba(216, 180, 119, 0.35);
+  --shadow-sm: 0 1px 2px 0 rgba(23, 32, 42, 0.04);
+  --shadow-md: 0 4px 16px -2px rgba(23, 32, 42, 0.06);
+  --shadow-lg: 0 10px 30px -4px rgba(23, 32, 42, 0.08);
 }
 
 .dark {
   /* DARK THEME TOKENS (DEEP OBSIDIAN DEVELOPER STUDIO) */
-  --bg-main: #090d16;
-  --bg-card: #0f1626;
-  --bg-card-hover: #162035;
-  --bg-input: #090d16;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #1e293b;
-  --border-hover: #334155;
-  --accent-blue: #3b82f6;
-  --accent-purple: #818cf8;
-  --badge-bg: #111c33;
-  --badge-border: #1e293b;
-  --header-bg: rgba(9, 13, 22, 0.88);
-  --focus-ring: rgba(59, 130, 246, 0.35);
+  --bg-main: #24292D;
+  --bg-card: #2D3337;
+  --bg-card-hover: #343B3F;
+  --icon-bg: #465055;
+  --bg-input: #2D3337;
+  --text-primary: #F5F3EE;
+  --text-secondary: #B7BEC0;
+  --text-muted: #8F9DA1;
+  --placeholder-color: #9CA3AF;
+  --border-color: #465055;
+  --border-hover: #D8B477;
+  --accent-blue: #D8B477;
+  --accent-purple: #D8B477;
+  --accent-foreground: #17202A;
+  --brand-blue: #8F9DA1;
+  --brand-purple: #8F9DA1;
+  --badge-bg: #3A3328;
+  --badge-border: #465055;
+  --header-bg: rgba(36, 41, 45, 0.88);
+  --focus-ring: rgba(216, 180, 119, 0.35);
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
@@ -93,17 +103,17 @@
 
 /* Accent Gradients & Shadows */
 .gradient-accent-text {
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent-blue);
+  background: none;
+  -webkit-text-fill-color: var(--accent-blue);
 }
 
 .gradient-accent-bg {
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+  background: var(--icon-bg);
 }
 
 .gradient-accent-bg-hover:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #4f46e5) !important;
+  background: var(--accent-blue) !important;
 }
 
 .shadow-theme-sm { box-shadow: var(--shadow-sm); }

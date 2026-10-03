@@ -33,13 +33,13 @@ export default function QuestionPanel({
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Ask a question about this repository..."
             disabled={queryLoading || backendUnavailable}
-            className="flex-1 bg-transparent px-4 py-3.5 text-sm sm:text-base font-sans text-theme-primary placeholder:text-theme-muted focus:outline-none transition-all duration-200 disabled:opacity-50"
+            className="flex-1 bg-transparent px-4 py-3.5 text-sm sm:text-base font-sans text-theme-primary placeholder:text-[var(--placeholder-color)] focus:outline-none transition-all duration-200 disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={queryLoading || !question.trim() || backendUnavailable}
-            className="gradient-accent-bg gradient-accent-bg-hover text-white font-sans text-sm font-bold px-8 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-theme-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
+            className="bg-[var(--accent-blue)] text-[var(--accent-foreground)] font-sans text-sm font-bold px-8 py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-theme-sm disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
           >
             <span>{queryLoading ? 'Tracing Graph...' : 'Ask'}</span>
             <span className="text-base">↗</span>
