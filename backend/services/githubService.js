@@ -185,13 +185,51 @@ export async function fetchRepoData(owner, repo) {
       url: issue.html_url,
     }));
 
-    console.log(`[GitHub Service] History extracted: ${commits.length} commits, ${pullRequests.length} PRs, ${issues.length} issues.`);
+    // 5. Fetch Key Source Files & Documentation
+    const candidatePaths = ['README.md', 'README.rst', 'ARCHITECTURE.md', 'docs/index.md'];
+    try {
+      const { data: rootContent } = await octokit.rest.repos.getContent({ owner, repo, path: '' });
+      if (Array.isArray(rootContent)) {
+        rootContent.forEach(item => {
+          if (item.type === 'file' && !candidatePaths.includes(item.path)) {
+            const lower = item.name.toLowerCase();
+            if (lower.endsWith('.md') || lower.endsWith('.py') || lower.endsWith('.ts') || lower.endsWith('.js') || lower.endsWith('.yaml') || lower.endsWith('.yml') || lower.includes('dvc') || lower.includes('config')) {
+              if (candidatePaths.length < 12) candidatePaths.push(item.path);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`[GitHub Service] Root directory listing skipped: ${e.message}`);
+    }
+
+    const files = (await Promise.all(
+      candidatePaths.map(async (filePath) => {
+        try {
+          const res = await octokit.rest.repos.getContent({ owner, repo, path: filePath });
+          if (res.data && res.data.content && res.data.encoding === 'base64') {
+            const rawContent = Buffer.from(res.data.content, 'base64').toString('utf-8');
+            return {
+              path: filePath,
+              content: rawContent.substring(0, 4000),
+              url: res.data.html_url || `https://github.com/${owner}/${repo}/blob/main/${filePath}`,
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    )).filter(Boolean);
+
+    console.log(`[GitHub Service] History & Files extracted: ${commits.length} commits, ${pullRequests.length} PRs, ${issues.length} issues, ${files.length} source/doc files.`);
 
     return {
       metadata: repoMetadata,
       commits,
       pullRequests,
       issues,
+      files,
     };
   } catch (err) {
     console.error(`[GitHub Service] Extraction failed for ${owner}/${repo}:`, err.message);

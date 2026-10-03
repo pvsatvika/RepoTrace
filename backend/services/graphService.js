@@ -110,11 +110,12 @@ export async function clearRepositoryGraph(owner, repo) {
         OPTIONAL MATCH (r)-[:HAS_COMMIT]->(c:Commit)
         OPTIONAL MATCH (r)-[:HAS_PULL_REQUEST]->(pr:PullRequest)
         OPTIONAL MATCH (r)-[:HAS_ISSUE]->(i:Issue)
+        OPTIONAL MATCH (r)-[:HAS_FILE]->(f:File)
         OPTIONAL MATCH (c)-[:SUPPORTS]->(dec1:Decision)
         OPTIONAL MATCH (pr)-[:IMPLEMENTS]->(dec2:Decision)
         OPTIONAL MATCH (i)-[:DESCRIBES]->(inc:Incident)
         OPTIONAL MATCH (pr)-[:HAS_DISCUSSION]->(d:Discussion)
-        DETACH DELETE r, c, pr, i, dec1, dec2, inc, d
+        DETACH DELETE r, c, pr, i, dec1, dec2, inc, d, f
         `,
         { repoId }
       )
@@ -504,7 +505,27 @@ export async function buildDecisionGraph(repoData) {
       }
     }
 
-    console.log(`[Neo4j Service] Decision Graph built successfully for ${repoId}.`);
+    // Ingest File nodes
+    const files = repoData.files || [];
+    for (const fileObj of files) {
+      const fileId = `${repoId}:${fileObj.path}`;
+      await session.executeWrite((tx) =>
+        tx.run(
+          `
+          MATCH (r:Repository { id: $repoId })
+          MERGE (f:File { id: $fileId })
+          SET f.path = $path,
+              f.content = $content,
+              f.url = $url,
+              f.repoId = $repoId
+          MERGE (r)-[:HAS_FILE]->(f)
+          `,
+          { repoId, fileId, path: fileObj.path, content: fileObj.content, url: fileObj.url }
+        )
+      );
+    }
+
+    console.log(`[Neo4j Service] Decision Graph built successfully for ${repoId} (${files.length} file nodes).`);
     return { success: true, repository: repoId };
   } catch (err) {
     console.error(`[Neo4j Service] Decision graph build error:`, err.message);
@@ -644,6 +665,20 @@ export async function querySubgraph(question, repository = null) {
              coalesce(pr.url, '#') AS url,
              ('Review Comment by @' + d.user + ': ' + substring(d.body, 0, 200)) AS reason,
              6 AS rank
+
+      UNION
+
+      // 7. Source Files & Documentation for repoId
+      MATCH (r:Repository { id: $repoId })-[:HAS_FILE]->(f:File)
+      WHERE ($keyword = '' OR toLower(f.path) CONTAINS toLower($keyword) OR toLower(f.content) CONTAINS toLower($keyword) OR toLower(f.path) CONTAINS 'readme' OR toLower(f.path) CONTAINS 'architecture')
+      RETURN 'file' AS type,
+             f.id AS id,
+             ('File: ' + f.path) AS title,
+             'Repository Source' AS author,
+             'Current Codebase' AS date,
+             f.url AS url,
+             ('Source File / Doc (' + f.path + '): ' + substring(f.content, 0, 350)) AS reason,
+             1 AS rank
     `;
 
     const result = await session.executeRead((tx) => tx.run(cypher, { repoId, keyword }));

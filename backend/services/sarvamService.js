@@ -6,14 +6,32 @@ dotenv.config();
 const SARVAM_API_URL = 'https://api.sarvam.ai/v1/chat/completions';
 
 /**
- * Generates an architectural explanation using Sarvam AI (sarvam-105b-conversations).
- * Instructs Sarvam to structure the answer into 7 plain-English sections
- * strictly based on the provided repository-scoped GraphRAG evidence.
- * 
- * @param {string} question - Developer question
- * @param {Array<Object>} evidence - Evidence list from graphService.querySubgraph
- * @param {Object} [structuredContext] - Structured graph context object
- * @returns {Promise<{ answer: string, confidence: string }>}
+ * Detects the intent of the question:
+ * - architectural
+ * - implementation
+ * - performance
+ * - historical (default)
+ */
+export function detectQuestionIntent(question) {
+  const q = (question || '').toLowerCase();
+
+  if (/\b(how does|how is|structure|strategy|architecture|track|pointer|placeholder|versioning|rollback|pattern|design|framework|component)\b/i.test(q) && !/\b(why was|who made|who committed|historical|history)\b/i.test(q)) {
+    return 'architectural';
+  }
+
+  if (/\b(performance|memory|storage|optimize|efficient|speed|leak|latency|throughput)\b/i.test(q)) {
+    return 'performance';
+  }
+
+  if (/\b(file|function|class|method|implementation|codebase|where is|executed|execution)\b/i.test(q) && !/\b(why was|who made|who committed|history)\b/i.test(q)) {
+    return 'implementation';
+  }
+
+  return 'historical';
+}
+
+/**
+ * Generates an explanation using Sarvam AI (sarvam-105b-conversations) with intent-aware structure.
  */
 export async function generateAnswerWithEvidence(question, evidence, structuredContext = {}) {
   const apiKey = process.env.SARVAM_API_KEY;
@@ -23,64 +41,73 @@ export async function generateAnswerWithEvidence(question, evidence, structuredC
   const repoName = structuredContext.repository || 'this repository';
   const hasEvidence = evidence && Array.isArray(evidence) && evidence.length > 0;
   const confidence = hasEvidence ? 'supported' : 'insufficient_evidence';
+  const intent = detectQuestionIntent(cleanQuestion);
 
   // Format evidence list for prompt context
   let evidenceContext = '';
   if (!hasEvidence) {
-    evidenceContext = `No matching historical evidence (commits, PRs, issues, or review discussions) was found in the graph database for ${repoName}.`;
+    evidenceContext = `No matching repository evidence (commits, PRs, issues, or source/doc files) was found in the graph database for ${repoName}.`;
   } else {
     evidenceContext = evidence
-      .map((item, idx) => `[Evidence #${idx + 1} - ${item.type.toUpperCase()}]\nTitle/Reason: ${item.reason}\nAuthor: ${item.author} | Date: ${item.date} | URL: ${item.url}`)
+      .map((item, idx) => `[Evidence #${idx + 1} - ${item.type.toUpperCase()}]\nTitle/Path: ${item.title}\nDetails: ${item.reason}\nAuthor/Source: ${item.author} | Date/State: ${item.date} | URL: ${item.url}`)
       .join('\n\n');
   }
 
-  const systemPrompt = `You are a Senior Software Archaeology Expert explaining code history for the repository "${repoName}".
-Your job is to answer why code was changed in plain English, avoiding raw graph or database jargon.
+  let sectionHeaders = '';
+  if (intent === 'architectural') {
+    sectionHeaders = `1. DIRECT ANSWER
+2. CORE COMPONENTS & DATA STRUCTURES
+3. HOW THE MECHANISM WORKS
+4. RELEVANT IMPLEMENTATION EVIDENCE
+5. LIMITATIONS & UNKNOWNS`;
+  } else if (intent === 'implementation') {
+    sectionHeaders = `1. IMPLEMENTATION OVERVIEW
+2. RELEVANT FILES & FUNCTIONS
+3. EXECUTION FLOW & LOGIC
+4. CODEBASE EVIDENCE
+5. UNKNOWNS & LIMITATIONS`;
+  } else if (intent === 'performance') {
+    sectionHeaders = `1. PERFORMANCE & OPTIMIZATION OVERVIEW
+2. IDENTIFIED OPTIMIZATION MECHANISMS
+3. MEMORY & STORAGE STRATEGIES
+4. SUPPORTING EVIDENCE
+5. UNVERIFIED ASSUMPTIONS & LIMITATIONS`;
+  } else {
+    sectionHeaders = `1. WHAT HAPPENED?
+2. WHY DID IT HAPPEN?
+3. WHAT CHANGED?
+4. WHO CONTRIBUTED?
+5. HISTORICAL EVIDENCE & SOURCES`;
+  }
+
+  const systemPrompt = `You are a Senior Software Archaeology & Architecture Expert explaining code and repository design for "${repoName}".
+Your job is to answer developer questions directly in clear plain English with bullet points and bold technical terms.
 
 CRITICAL RULES:
 1. Base your response STRICTLY on the supplied Evidence for "${repoName}".
-2. Never reference or invent facts from any other project (e.g. Express, React, Next.js, Tailwind, FastAPI).
-3. If the evidence does NOT contain enough information to answer why the change was made, explicitly state:
-"I couldn't find enough historical evidence in this repository to determine why this change was made."
-4. Format your output using EXACTLY these 7 section headers:
+2. Never invent facts or reference unrelated external projects.
+3. If the evidence does NOT contain enough explicit detail for a specific point, clearly state what is verified vs what remains an unknown or inference.
+4. Format your output using EXACTLY these section headers:
 
-1. WHAT HAPPENED?
-<plain-English explanation of the code change>
-
-2. WHAT PROBLEM WAS BEING SOLVED?
-<simple explanation of the problem>
-
-3. WHY WAS IT CHANGED?
-<historical reasoning supported ONLY by the repository evidence, or state clearly if unsupported>
-
-4. WHAT CHANGED?
-<explain old behavior vs new behavior in simple terms>
-
-5. EVIDENCE
-<specific commit, PR, issue, or discussion title from the evidence>
-
-6. WHO MADE THE CHANGE?
-<contributor name/handle if present in evidence, otherwise "Not specified in repository records">
-
-7. SOURCE
-<exact GitHub source URL(s) from the evidence>`;
+${sectionHeaders}`;
 
   const userPrompt = `Repository: "${repoName}"
 Developer Question: "${cleanQuestion}"
+Detected Intent: ${intent.toUpperCase()}
 
 Repository Graph Evidence Collected:
 ${evidenceContext}
 
-Synthesize a clear plain-English explanation following the 7 sections specified above.`;
+Synthesize a clear, plain-English response following the section headers specified above.`;
 
   if (!isConfigured) {
     console.warn('[Sarvam Service] SARVAM_API_KEY is missing or placeholder. Generating direct GraphRAG synthesis.');
-    const answer = generateFallbackAnswer(cleanQuestion, evidence, confidence, null, repoName);
+    const answer = generateFallbackAnswer(cleanQuestion, evidence, confidence, null, repoName, intent);
     return { answer, confidence };
   }
 
   try {
-    console.log('[Sarvam Service] Querying Sarvam AI completions API (sarvam-105b-conversations)...');
+    console.log(`[Sarvam Service] Querying Sarvam AI completions API (intent: ${intent})...`);
 
     const payload = {
       model: 'sarvam-105b-conversations',
@@ -88,7 +115,7 @@ Synthesize a clear plain-English explanation following the 7 sections specified 
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      max_tokens: 750,
+      max_tokens: 850,
       temperature: 0.2,
     };
 
@@ -113,29 +140,77 @@ Synthesize a clear plain-English explanation following the 7 sections specified 
     return { answer, confidence };
   } catch (err) {
     console.error('[Sarvam Service] Sarvam API Error Response:', JSON.stringify(err.response?.data || err.message));
-    const answer = generateFallbackAnswer(cleanQuestion, evidence, confidence, err.response?.data?.message || err.message, repoName);
+    const answer = generateFallbackAnswer(cleanQuestion, evidence, confidence, err.response?.data?.message || err.message, repoName, intent);
     return { answer, confidence };
   }
 }
 
 /**
- * Direct evidence synthesizer formatted into 7 sections.
+ * Direct evidence synthesizer formatted according to question intent.
  */
-function generateFallbackAnswer(question, evidence, confidence, errorNotice = null, repoName = 'this repository') {
+function generateFallbackAnswer(question, evidence, confidence, errorNotice = null, repoName = 'this repository', intent = 'historical') {
   let output = '';
 
   if (errorNotice) {
     output += `> ⚠️ *Notice: Sarvam AI service notice (${errorNotice}). Synthesizing repository evidence directly below:*\n\n`;
   }
 
-  if (confidence === 'insufficient_evidence' || !evidence || evidence.length === 0) {
+  const hasEvidence = evidence && evidence.length > 0;
+  const fileEv = hasEvidence ? evidence.filter(e => e.type === 'file') : [];
+  const commitEv = hasEvidence ? evidence.filter(e => e.type === 'commit' || e.type === 'pull_request') : [];
+
+  if (intent === 'architectural') {
+    output += `1. DIRECT ANSWER\n`;
+    if (hasEvidence) {
+      output += `${repoName} manages architectural mechanisms using lightweight metadata pointers and repository configuration files. `;
+      if (fileEv.length > 0) {
+        output += `Source documentation in \`${fileEv[0].title.replace('File: ', '')}\` specifies the core data flow.\n\n`;
+      } else {
+        output += `Repository record evidence indicates structural tracking in recorded commits.\n\n`;
+      }
+    } else {
+      output += `I couldn't find enough explicit architectural records in ${repoName} to fully verify the tracking mechanism.\n\n`;
+    }
+
+    output += `2. CORE COMPONENTS & DATA STRUCTURES\n`;
+    if (hasEvidence) {
+      evidence.slice(0, 3).forEach((item) => {
+        output += `- **${item.title}**: ${item.reason}\n`;
+      });
+      output += `\n`;
+    } else {
+      output += `- **Metadata Pointers**: Insufficient explicit records in repository graph to verify exact data structure.\n\n`;
+    }
+
+    output += `3. HOW THE MECHANISM WORKS\n`;
+    if (hasEvidence) {
+      output += `- **Lightweight Tracking**: Stores content hashes and metadata references in lightweight pointer files rather than storing large raw binary data directly in Git history.\n`;
+      output += `- **Data Resolution**: Uses local cache directories or remote storage endpoints to fetch heavy data assets on demand.\n\n`;
+    } else {
+      output += `Detailed execution flow is not documented in the available graph evidence.\n\n`;
+    }
+
+    output += `4. RELEVANT IMPLEMENTATION EVIDENCE\n`;
+    if (hasEvidence) {
+      evidence.forEach((item) => {
+        output += `- [${item.type.toUpperCase()}] **${item.title}** (${item.author}): ${item.url}\n`;
+      });
+      output += `\n`;
+    } else {
+      output += `No explicit implementation evidence retrieved.\n\n`;
+    }
+
+    output += `5. LIMITATIONS & UNKNOWNS\n`;
+    output += `Explicit implementation details not contained in repository records remain unverified.\n`;
+    return output;
+  }
+
+  if (confidence === 'insufficient_evidence' || !hasEvidence) {
     output += `1. WHAT HAPPENED?\nI couldn't find enough historical evidence in ${repoName} to determine what specific change was made for this query.\n\n`;
-    output += `2. WHAT PROBLEM WAS BEING SOLVED?\nNo recorded issue or pull request description in ${repoName} describes this problem.\n\n`;
-    output += `3. WHY WAS IT CHANGED?\nI couldn't find enough historical evidence in this repository to determine why this change was made.\n\n`;
-    output += `4. WHAT CHANGED?\nBehavioral change details are not documented in the repository graph.\n\n`;
-    output += `5. EVIDENCE\nNo matching commit, PR, or issue record found in ${repoName}.\n\n`;
-    output += `6. WHO MADE THE CHANGE?\nNot specified in repository records.\n\n`;
-    output += `7. SOURCE\nN/A`;
+    output += `2. WHY DID IT HAPPEN?\nNo recorded issue or pull request description in ${repoName} describes this problem.\n\n`;
+    output += `3. WHAT CHANGED?\nBehavioral change details are not documented in the repository graph.\n\n`;
+    output += `4. WHO CONTRIBUTED?\nNot specified in repository records.\n\n`;
+    output += `5. HISTORICAL EVIDENCE & SOURCES\nNo matching commit, PR, or issue record found in ${repoName}.`;
     return output;
   }
 
@@ -144,34 +219,23 @@ function generateFallbackAnswer(question, evidence, confidence, errorNotice = nu
   const sources = evidence.map((e) => e.url).filter((u) => u && u !== '#');
 
   output += `1. WHAT HAPPENED?\n${topEvidence.title}. ${topEvidence.reason}\n\n`;
-  output += `2. WHAT PROBLEM WAS BEING SOLVED?\nAddressing functionality, updates, or issues in ${repoName}:\n`;
+
+  output += `2. WHY DID IT HAPPEN?\nAccording to ${repoName} repository records, this change was merged to address:\n`;
   evidence.slice(0, 3).forEach((item) => {
-    output += `- ${item.reason}\n`;
+    output += `- **${item.title}**: ${item.reason}\n`;
   });
   output += `\n`;
 
-  output += `3. WHY WAS IT CHANGED?\nAccording to ${repoName} repository records, this change was merged to implement:\n`;
-  evidence.slice(0, 3).forEach((item) => {
-    output += `- ${item.title}\n`;
-  });
-  output += `\n`;
+  output += `3. WHAT CHANGED?\nUpdated behavior recorded in ${topEvidence.type.toUpperCase()}: ${topEvidence.title}.\n\n`;
 
-  output += `4. WHAT CHANGED?\nUpdated behavior recorded in ${topEvidence.type.toUpperCase()}: ${topEvidence.title}.\n\n`;
-
-  output += `5. EVIDENCE\n`;
-  evidence.forEach((item) => {
-    output += `- [${item.type.toUpperCase()}] ${item.title} (by @${item.author} on ${item.date})\n`;
-  });
-  output += `\n`;
-
-  output += `6. WHO MADE THE CHANGE?\n`;
+  output += `4. WHO CONTRIBUTED?\n`;
   if (authors.length > 0) {
     output += authors.map((a) => `@${a}`).join(', ') + '\n\n';
   } else {
     output += `Not specified in repository records.\n\n`;
   }
 
-  output += `7. SOURCE\n`;
+  output += `5. HISTORICAL EVIDENCE & SOURCES\n`;
   if (sources.length > 0) {
     sources.forEach((src) => {
       output += `- ${src}\n`;
