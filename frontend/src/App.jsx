@@ -245,8 +245,7 @@ export default function App() {
 
               {/* GIANT HEADLINE */}
               <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-extrabold text-theme-primary tracking-tight leading-[1.05]">
-                WHY THE CODE<br />
-                IS LIKE <span className="gradient-accent-text">THIS</span>
+                Repo<span className="gradient-accent-text">Trace</span>
               </h1>
 
               {/* SUBTITLE */}
@@ -623,7 +622,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="border-t border-theme py-8 text-center text-xs text-theme-muted font-mono">
-        WhyTheCodeIsLikeThis :: Graph-Grounded Code Archaeology Engine
+        RepoTrace :: Graph-Grounded Code Archaeology Engine
       </footer>
 
       {/* CONTACT MODAL */}
@@ -641,7 +640,7 @@ export default function App() {
             </div>
 
             <p className="text-xs text-theme-secondary font-sans leading-relaxed">
-              WhyTheCodeIsLikeThis is a developer-tool designed to trace repository decision rationale using Neo4j GraphRAG and Sarvam AI synthesis.
+              RepoTrace is a developer-tool designed to trace repository decision rationale using Neo4j GraphRAG and Sarvam AI synthesis.
             </p>
 
             <div className="space-y-2 font-mono text-xs text-theme-primary pt-2 border-t border-theme">

@@ -16,7 +16,6 @@ export default function Header({
     { id: 'explore', label: 'Home' },
     { id: 'how-it-works', label: 'About' },
     { id: 'history', label: 'History' },
-    { id: 'contact', label: 'Contact' },
   ];
 
   const handleNavClick = (id) => {
@@ -42,7 +41,7 @@ export default function Header({
         >
           <LogoMark size={30} />
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-theme-primary font-mono group-hover:text-[var(--accent-blue)] transition-colors">
-            WhyTheCodeIsLikeThis
+            RepoTrace
           </h1>
 
           {repository && (
