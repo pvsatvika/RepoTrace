@@ -1,4 +1,4 @@
-# Project Specification: Why The Code Is Like This
+# Project Specification: RepoTrace
 
 ## 1. What is the system doing?
 "Why The Code Is Like This" is a GraphRAG (Graph Retrieval-Augmented Generation) system that ingests repository commit history, pull requests, and review discussions from GitHub, builds a decision graph in Neo4j, and uses Sarvam AI to provide evidence-backed answers explaining why specific code changes or architectural decisions were made.
